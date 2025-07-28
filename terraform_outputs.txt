@@ -1,0 +1,196 @@
+# outputs.tf - Output values for other systems to reference
+
+output "vpc_id" {
+  description = "ID of the VPC"
+  value       = aws_vpc.main.id
+}
+
+output "vpc_cidr_block" {
+  description = "CIDR block of the VPC"
+  value       = aws_vpc.main.cidr_block
+}
+
+output "public_subnet_ids" {
+  description = "IDs of the public subnets"
+  value       = aws_subnet.public[*].id
+}
+
+output "private_subnet_ids" {
+  description = "IDs of the private subnets"
+  value       = aws_subnet.private[*].id
+}
+
+output "database_subnet_ids" {
+  description = "IDs of the database subnets"
+  value       = aws_subnet.database[*].id
+}
+
+output "alb_dns_name" {
+  description = "DNS name of the load balancer"
+  value       = aws_lb.main.dns_name
+}
+
+output "alb_zone_id" {
+  description = "Zone ID of the load balancer"
+  value       = aws_lb.main.zone_id
+}
+
+output "alb_arn" {
+  description = "ARN of the load balancer"
+  value       = aws_lb.main.arn
+}
+
+output "rds_endpoint" {
+  description = "RDS instance endpoint"
+  value       = aws_db_instance.main.endpoint
+  sensitive   = true
+}
+
+output "rds_port" {
+  description = "RDS instance port"
+  value       = aws_db_instance.main.port
+}
+
+output "redis_endpoint" {
+  description = "Redis cluster endpoint"
+  value       = aws_elasticache_replication_group.redis.primary_endpoint_address
+  sensitive   = true
+}
+
+output "redis_port" {
+  description = "Redis cluster port"
+  value       = aws_elasticache_replication_group.redis.port
+}
+
+output "ecs_cluster_name" {
+  description = "Name of the ECS cluster"
+  value       = aws_ecs_cluster.main.name
+}
+
+output "ecs_cluster_arn" {
+  description = "ARN of the ECS cluster"
+  value       = aws_ecs_cluster.main.arn
+}
+
+output "ecr_flask_app_url" {
+  description = "URL of the Flask app ECR repository"
+  value       = aws_ecr_repository.flask_app.repository_url
+}
+
+output "ecr_celery_worker_url" {
+  description = "URL of the Celery worker ECR repository"
+  value       = aws_ecr_repository.celery_worker.repository_url
+}
+
+output "ecr_celery_beat_url" {
+  description = "URL of the Celery beat ECR repository"
+  value       = aws_ecr_repository.celery_beat.repository_url
+}
+
+output "s3_logs_bucket_name" {
+  description = "Name of the S3 logs bucket"
+  value       = aws_s3_bucket.logs.id
+}
+
+output "s3_logs_bucket_arn" {
+  description = "ARN of the S3 logs bucket"
+  value       = aws_s3_bucket.logs.arn
+}
+
+output "db_secret_arn" {
+  description = "ARN of the database credentials secret"
+  value       = aws_secretsmanager_secret.db_credentials.arn
+  sensitive   = true
+}
+
+output "redis_secret_arn" {
+  description = "ARN of the Redis credentials secret"
+  value       = aws_secretsmanager_secret.redis_credentials.arn
+  sensitive   = true
+}
+
+output "app_secrets_arn" {
+  description = "ARN of the application secrets"
+  value       = aws_secretsmanager_secret.app_secrets.arn
+  sensitive   = true
+}
+
+output "kms_key_id" {
+  description = "ID of the KMS key"
+  value       = aws_kms_key.main.key_id
+}
+
+output "kms_key_arn" {
+  description = "ARN of the KMS key"
+  value       = aws_kms_key.main.arn
+}
+
+output "waf_web_acl_arn" {
+  description = "ARN of the WAF Web ACL"
+  value       = aws_wafv2_web_acl.main.arn
+}
+
+# Security Group IDs for reference
+output "alb_security_group_id" {
+  description = "ID of the ALB security group"
+  value       = aws_security_group.alb.id
+}
+
+output "ecs_security_group_id" {
+  description = "ID of the ECS tasks security group"
+  value       = aws_security_group.ecs_tasks.id
+}
+
+output "rds_security_group_id" {
+  description = "ID of the RDS security group"
+  value       = aws_security_group.rds.id
+}
+
+output "redis_security_group_id" {
+  description = "ID of the Redis security group"
+  value       = aws_security_group.redis.id
+}
+
+# IAM Role ARNs
+output "ecs_task_execution_role_arn" {
+  description = "ARN of the ECS task execution role"
+  value       = aws_iam_role.ecs_task_execution_role.arn
+}
+
+output "ecs_task_role_arn" {
+  description = "ARN of the ECS task role"
+  value       = aws_iam_role.ecs_task_role.arn
+}
+
+# Domain and SSL
+output "domain_name" {
+  description = "Domain name for the application"
+  value       = var.domain_name
+}
+
+output "certificate_arn" {
+  description = "ARN of the SSL certificate"
+  value       = var.certificate_arn != "" ? var.certificate_arn : (length(aws_acm_certificate.main) > 0 ? aws_acm_certificate.main[0].arn : "")
+}
+
+# Environment info
+output "environment" {
+  description = "Environment name"
+  value       = var.environment
+}
+
+output "region" {
+  description = "AWS region"
+  value       = var.aws_region
+}
+
+# Application URLs
+output "application_url" {
+  description = "URL to access the application"
+  value       = var.domain_name != "" ? "https://${var.domain_name}" : "https://${aws_lb.main.dns_name}"
+}
+
+output "health_check_url" {
+  description = "URL for health checks"
+  value       = var.domain_name != "" ? "https://${var.domain_name}/health" : "https://${aws_lb.main.dns_name}/health"
+}

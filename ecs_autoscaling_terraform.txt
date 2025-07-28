@@ -1,0 +1,365 @@
+# ecs_autoscaling.tf - Auto-Scaling Policies for ThreatCompass ECS Services
+
+# =============================================================================
+# FLASK WEB APP AUTO-SCALING
+# =============================================================================
+
+# Auto Scaling Target for Flask App
+resource "aws_appautoscaling_target" "flask_app" {
+  max_capacity       = var.flask_max_capacity
+  min_capacity       = var.flask_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.flask_app.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-flask-app-scaling-target"
+  })
+}
+
+# Target Tracking Scaling Policy - ALB Request Count Per Target
+resource "aws_appautoscaling_policy" "flask_app_requests_per_target" {
+  name               = "${local.name_prefix}-flask-app-requests-per-target"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.flask_app.resource_id
+  scalable_dimension = aws_appautoscaling_target.flask_app.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.flask_app.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ALBRequestCountPerTarget"
+      resource_label         = "${aws_lb.main.arn_suffix}/${aws_lb_target_group.flask_app.arn_suffix}"
+    }
+
+    target_value       = 100.0  # 100 requests per minute per target
+    scale_in_cooldown  = 300    # 5 minutes scale-in cooldown
+    scale_out_cooldown = 180    # 3 minutes scale-out cooldown
+    
+    # Disable scale-in to prevent premature scaling down during traffic dips
+    disable_scale_in = false
+  }
+
+  depends_on = [aws_appautoscaling_target.flask_app]
+}
+
+# Target Tracking Scaling Policy - CPU Utilization (Backup metric)
+resource "aws_appautoscaling_policy" "flask_app_cpu" {
+  name               = "${local.name_prefix}-flask-app-cpu"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.flask_app.resource_id
+  scalable_dimension = aws_appautoscaling_target.flask_app.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.flask_app.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+
+    target_value       = 70.0   # 70% CPU utilization
+    scale_in_cooldown  = 300    # 5 minutes
+    scale_out_cooldown = 180    # 3 minutes
+  }
+
+  depends_on = [aws_appautoscaling_target.flask_app]
+}
+
+# Target Tracking Scaling Policy - Memory Utilization
+resource "aws_appautoscaling_policy" "flask_app_memory" {
+  name               = "${local.name_prefix}-flask-app-memory"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.flask_app.resource_id
+  scalable_dimension = aws_appautoscaling_target.flask_app.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.flask_app.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+
+    target_value       = 80.0   # 80% memory utilization
+    scale_in_cooldown  = 300    # 5 minutes
+    scale_out_cooldown = 180    # 3 minutes
+  }
+
+  depends_on = [aws_appautoscaling_target.flask_app]
+}
+
+# =============================================================================
+# CELERY WORKER AUTO-SCALING
+# =============================================================================
+
+# Auto Scaling Target for Celery Worker
+resource "aws_appautoscaling_target" "celery_worker" {
+  max_capacity       = var.celery_worker_max_capacity
+  min_capacity       = var.celery_worker_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.celery_worker.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-worker-scaling-target"
+  })
+}
+
+# SQS Queue for Celery (if using SQS instead of Redis for queuing)
+resource "aws_sqs_queue" "celery_queue" {
+  count = var.use_sqs_for_celery ? 1 : 0
+  
+  name                       = "${local.name_prefix}-celery-queue"
+  delay_seconds              = 0
+  max_message_size           = 262144
+  message_retention_seconds  = 1209600  # 14 days
+  receive_wait_time_seconds  = 10       # Long polling
+  visibility_timeout_seconds = 3600     # 1 hour
+
+  # Dead letter queue configuration
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.celery_dlq[0].arn
+    maxReceiveCount     = 3
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-queue"
+  })
+}
+
+# Dead Letter Queue for failed tasks
+resource "aws_sqs_queue" "celery_dlq" {
+  count = var.use_sqs_for_celery ? 1 : 0
+  
+  name                       = "${local.name_prefix}-celery-dlq"
+  message_retention_seconds  = 1209600  # 14 days
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-dlq"
+  })
+}
+
+# Target Tracking Scaling Policy - SQS Queue Depth (if using SQS)
+resource "aws_appautoscaling_policy" "celery_worker_sqs_queue" {
+  count = var.use_sqs_for_celery ? 1 : 0
+  
+  name               = "${local.name_prefix}-celery-worker-sqs-queue"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.celery_worker.resource_id
+  scalable_dimension = aws_appautoscaling_target.celery_worker.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.celery_worker.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    customized_metric_specification {
+      metric_name = "ApproximateNumberOfMessages"
+      namespace   = "AWS/SQS"
+      statistic   = "Average"
+      
+      dimensions = {
+        QueueName = aws_sqs_queue.celery_queue[0].name
+      }
+    }
+
+    target_value       = 5.0    # Target 5 messages in queue
+    scale_in_cooldown  = 600    # 10 minutes (longer cooldown for workers)
+    scale_out_cooldown = 300    # 5 minutes
+  }
+
+  depends_on = [aws_appautoscaling_target.celery_worker]
+}
+
+# Target Tracking Scaling Policy - CPU Utilization (for Redis-based setups)
+resource "aws_appautoscaling_policy" "celery_worker_cpu" {
+  count = var.use_sqs_for_celery ? 0 : 1
+  
+  name               = "${local.name_prefix}-celery-worker-cpu"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.celery_worker.resource_id
+  scalable_dimension = aws_appautoscaling_target.celery_worker.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.celery_worker.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+
+    target_value       = 60.0   # 60% CPU utilization (lower than web app)
+    scale_in_cooldown  = 600    # 10 minutes
+    scale_out_cooldown = 300    # 5 minutes
+  }
+
+  depends_on = [aws_appautoscaling_target.celery_worker]
+}
+
+# Custom Metric Scaling Policy - Based on Custom CloudWatch Metrics
+resource "aws_appautoscaling_policy" "celery_worker_custom_queue" {
+  count = var.use_sqs_for_celery ? 0 : 1
+  
+  name               = "${local.name_prefix}-celery-worker-custom-queue"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.celery_worker.resource_id
+  scalable_dimension = aws_appautoscaling_target.celery_worker.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.celery_worker.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    customized_metric_specification {
+      metric_name = "CeleryQueueDepth"
+      namespace   = "ThreatCompass"
+      statistic   = "Average"
+      
+      dimensions = {
+        QueueName = "default"
+        Service   = "CeleryWorker"
+      }
+    }
+
+    target_value       = 10.0   # Target 10 tasks in queue
+    scale_in_cooldown  = 600    # 10 minutes
+    scale_out_cooldown = 300    # 5 minutes
+  }
+
+  depends_on = [aws_appautoscaling_target.celery_worker]
+}
+
+# =============================================================================
+# CELERY BEAT AUTO-SCALING (Singleton Service)
+# =============================================================================
+
+# Note: Celery Beat should typically run as a singleton (desired_count = 1)
+# because it's a scheduler that should not have multiple instances to avoid
+# duplicate task scheduling. We'll configure it with minimal scaling.
+
+resource "aws_appautoscaling_target" "celery_beat" {
+  max_capacity       = 2  # Maximum 2 for high availability during updates
+  min_capacity       = 1  # Always keep 1 running
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.celery_beat.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-beat-scaling-target"
+  })
+}
+
+# Simple CPU-based scaling for Celery Beat (rare scenario)
+resource "aws_appautoscaling_policy" "celery_beat_cpu" {
+  name               = "${local.name_prefix}-celery-beat-cpu"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.celery_beat.resource_id
+  scalable_dimension = aws_appautoscaling_target.celery_beat.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.celery_beat.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+
+    target_value       = 80.0   # 80% CPU (should rarely be reached)
+    scale_in_cooldown  = 900    # 15 minutes (very conservative)
+    scale_out_cooldown = 300    # 5 minutes
+  }
+
+  depends_on = [aws_appautoscaling_target.celery_beat]
+}
+
+# =============================================================================
+# SCHEDULED SCALING (PREDICTIVE SCALING)
+# =============================================================================
+
+# Scheduled scaling for predictable traffic patterns
+resource "aws_appautoscaling_scheduled_action" "flask_app_scale_up_business_hours" {
+  name               = "${local.name_prefix}-flask-app-scale-up-business-hours"
+  service_namespace  = aws_appautoscaling_target.flask_app.service_namespace
+  resource_id        = aws_appautoscaling_target.flask_app.resource_id
+  scalable_dimension = aws_appautoscaling_target.flask_app.scalable_dimension
+
+  # Scale up at 8 AM UTC Monday-Friday
+  schedule = "cron(0 8 ? * MON-FRI *)"
+
+  scalable_target_action {
+    min_capacity = var.flask_min_capacity + 1  # Increase minimum capacity
+    max_capacity = var.flask_max_capacity
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "flask_app_scale_down_after_hours" {
+  name               = "${local.name_prefix}-flask-app-scale-down-after-hours"
+  service_namespace  = aws_appautoscaling_target.flask_app.service_namespace
+  resource_id        = aws_appautoscaling_target.flask_app.resource_id
+  scalable_dimension = aws_appautoscaling_target.flask_app.scalable_dimension
+
+  # Scale down at 10 PM UTC Monday-Friday
+  schedule = "cron(0 22 ? * MON-FRI *)"
+
+  scalable_target_action {
+    min_capacity = var.flask_min_capacity     # Reset to normal minimum
+    max_capacity = var.flask_max_capacity
+  }
+}
+
+# Weekend scaling adjustments
+resource "aws_appautoscaling_scheduled_action" "flask_app_weekend_scale_down" {
+  name               = "${local.name_prefix}-flask-app-weekend-scale-down"
+  service_namespace  = aws_appautoscaling_target.flask_app.service_namespace
+  resource_id        = aws_appautoscaling_target.flask_app.resource_id
+  scalable_dimension = aws_appautoscaling_target.flask_app.scalable_dimension
+
+  # Scale down on Saturday at 12 AM UTC
+  schedule = "cron(0 0 ? * SAT *)"
+
+  scalable_target_action {
+    min_capacity = max(1, var.flask_min_capacity - 1)  # Reduce weekend minimum
+    max_capacity = var.flask_max_capacity
+  }
+}
+
+resource "aws_appautoscaling_scheduled_action" "flask_app_weekend_scale_up" {
+  name               = "${local.name_prefix}-flask-app-weekend-scale-up"
+  service_namespace  = aws_appautoscaling_target.flask_app.service_namespace
+  resource_id        = aws_appautoscaling_target.flask_app.resource_id
+  scalable_dimension = aws_appautoscaling_target.flask_app.scalable_dimension
+
+  # Scale back up on Monday at 7 AM UTC
+  schedule = "cron(0 7 ? * MON *)"
+
+  scalable_target_action {
+    min_capacity = var.flask_min_capacity     # Reset to normal
+    max_capacity = var.flask_max_capacity
+  }
+}
+
+# =============================================================================
+# SCALING VARIABLES
+# =============================================================================
+
+variable "use_sqs_for_celery" {
+  description = "Use SQS instead of Redis for Celery message broker"
+  type        = bool
+  default     = false
+}
+
+variable "enable_predictive_scaling" {
+  description = "Enable scheduled scaling based on business hours"
+  type        = bool
+  default     = true
+}
+
+# =============================================================================
+# OUTPUTS
+# =============================================================================
+
+output "autoscaling_policy_arns" {
+  description = "ARNs of the autoscaling policies"
+  value = {
+    flask_app_requests = aws_appautoscaling_policy.flask_app_requests_per_target.arn
+    flask_app_cpu      = aws_appautoscaling_policy.flask_app_cpu.arn
+    flask_app_memory   = aws_appautoscaling_policy.flask_app_memory.arn
+    celery_worker_cpu  = var.use_sqs_for_celery ? null : aws_appautoscaling_policy.celery_worker_cpu[0].arn
+    celery_worker_sqs  = var.use_sqs_for_celery ? aws_appautoscaling_policy.celery_worker_sqs_queue[0].arn : null
+    celery_beat_cpu    = aws_appautoscaling_policy.celery_beat_cpu.arn
+  }
+}
+
+output "sqs_queue_urls" {
+  description = "SQS queue URLs if using SQS for Celery"
+  value = var.use_sqs_for_celery ? {
+    celery_queue = aws_sqs_queue.celery_queue[0].url
+    celery_dlq   = aws_sqs_queue.celery_dlq[0].url
+  } : null
+}

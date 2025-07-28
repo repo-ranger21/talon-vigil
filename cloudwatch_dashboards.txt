@@ -1,0 +1,691 @@
+# cloudwatch_dashboards.tf - CloudWatch Dashboards for ThreatCompass
+
+# Overall Application Health Dashboard
+resource "aws_cloudwatch_dashboard" "application_health" {
+  dashboard_name = "${local.name_prefix}-application-health"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.main.arn_suffix],
+            [".", "TargetResponseTime", ".", "."],
+            [".", "HTTPCode_Target_2XX_Count", ".", "."],
+            [".", "HTTPCode_Target_4XX_Count", ".", "."],
+            [".", "HTTPCode_Target_5XX_Count", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Application Load Balancer Metrics"
+          period  = 300
+          stat    = "Sum"
+          yAxis = {
+            left = {
+              min = 0
+            }
+          }
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ECS", "CPUUtilization", "ServiceName", aws_ecs_service.flask_app.name, "ClusterName", aws_ecs_cluster.main.name],
+            [".", "MemoryUtilization", ".", ".", ".", "."],
+            ["...", aws_ecs_service.celery_worker.name, ".", "."],
+            ["...", aws_ecs_service.celery_beat.name, ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "ECS Service Resource Utilization"
+          period = 300
+          stat   = "Average"
+          yAxis = {
+            left = {
+              min = 0
+              max = 100
+            }
+          }
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ECS", "RunningTaskCount", "ServiceName", aws_ecs_service.flask_app.name, "ClusterName", aws_ecs_cluster.main.name],
+            [".", "DesiredCount", ".", ".", ".", "."],
+            [".", "PendingTaskCount", ".", ".", ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "Flask App Task Counts"
+          period = 300
+          stat   = "Average"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 8
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ECS", "RunningTaskCount", "ServiceName", aws_ecs_service.celery_worker.name, "ClusterName", aws_ecs_cluster.main.name],
+            [".", "DesiredCount", ".", ".", ".", "."],
+            [".", "PendingTaskCount", ".", ".", ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "Celery Worker Task Counts"
+          period = 300
+          stat   = "Average"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 16
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ElastiCache", "CPUUtilization", "CacheClusterId", "${aws_elasticache_replication_group.redis.replication_group_id}-001"],
+            [".", "DatabaseMemoryUsagePercentage", ".", "."],
+            [".", "NetworkBytesIn", ".", "."],
+            [".", "NetworkBytesOut", ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "Redis Performance"
+          period = 300
+          stat   = "Average"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-application-health-dashboard"
+  })
+}
+
+# ThreatCompass Application Performance Dashboard
+resource "aws_cloudwatch_dashboard" "application_performance" {
+  dashboard_name = "${local.name_prefix}-application-performance"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["ThreatCompass", "RequestDuration", "Service", "FlaskApp", "Endpoint", "api.create_ioc"],
+            ["...", "api.create_playbook"],
+            ["...", "api.environment"],
+            ["...", "index"]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "API Response Times"
+          period  = 300
+          stat    = "Average"
+          yAxis = {
+            left = {
+              min = 0
+            }
+          }
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["ThreatCompass", "Errors", "ErrorType", "ClientError", "Component", "FlaskApp"],
+            ["...", "ServerError", ".", "."],
+            ["...", "ValidationError", ".", "."],
+            ["...", "AuthenticationError", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Application Error Rates"
+          period  = 300
+          stat    = "Sum"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["ThreatCompass", "IOCsProcessed", "Status", "Success"],
+            ["...", "Failure"],
+            [".", "PlaybooksGenerated", "Component", "PlaybookEngine"],
+            [".", "EnrichmentAttempts", "Status", "Success"],
+            ["...", "Failure"]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "Business Metrics - IOCs & Playbooks"
+          period = 300
+          stat   = "Sum"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 8
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["ThreatCompass", "UserActivity", "ActivityType", "login"],
+            ["...", "ioc_created"],
+            ["...", "playbook_viewed"],
+            ["...", "environment_updated"],
+            ["...", "automation_executed"]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "User Activity Metrics"
+          period = 300
+          stat   = "Sum"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 16
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["ThreatCompass", "AutomationExecutions", "Status", "Success"],
+            ["...", "Failure"],
+            [".", "EnrichmentAttempts", "EnrichmentSource", "VirusTotal"],
+            ["...", "AbuseIPDB"],
+            ["...", "CISA"]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "Automation & Enrichment"
+          period = 300
+          stat   = "Sum"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-application-performance-dashboard"
+  })
+}
+
+# Database Performance Dashboard
+resource "aws_cloudwatch_dashboard" "database_performance" {
+  dashboard_name = "${local.name_prefix}-database-performance"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", aws_db_instance.main.identifier],
+            [".", "DatabaseConnections", ".", "."],
+            [".", "FreeableMemory", ".", "."],
+            [".", "FreeStorageSpace", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "RDS Resource Utilization"
+          period  = 300
+          stat    = "Average"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/RDS", "ReadLatency", "DBInstanceIdentifier", aws_db_instance.main.identifier],
+            [".", "WriteLatency", ".", "."],
+            [".", "ReadThroughput", ".", "."],
+            [".", "WriteThroughput", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "RDS I/O Performance"
+          period  = 300
+          stat    = "Average"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/RDS", "ReadIOPS", "DBInstanceIdentifier", aws_db_instance.main.identifier],
+            [".", "WriteIOPS", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "RDS IOPS"
+          period  = 300
+          stat    = "Average"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/RDS", "BinLogDiskUsage", "DBInstanceIdentifier", aws_db_instance.main.identifier],
+            [".", "TransactionLogsDiskUsage", ".", "."],
+            [".", "ReplicationSlotDiskUsage", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "RDS Disk Usage Details"
+          period  = 300
+          stat    = "Average"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-database-performance-dashboard"
+  })
+}
+
+# Background Tasks (Celery) Dashboard
+resource "aws_cloudwatch_dashboard" "background_tasks" {
+  dashboard_name = "${local.name_prefix}-background-tasks"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["ThreatCompass", "CeleryTaskCount", "TaskName", "enrich_ioc_task", "Status", "Success"],
+            ["...", "Failure"],
+            ["...", "generate_playbooks_task", ".", "Success"],
+            ["...", "Failure"],
+            ["...", "scrape_cisa_alerts", ".", "Success"],
+            ["...", "Failure"]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Celery Task Success/Failure Rates"
+          period  = 300
+          stat    = "Sum"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["ThreatCompass", "CeleryTaskDuration", "TaskName", "enrich_ioc_task"],
+            ["...", "generate_playbooks_task"],
+            ["...", "scrape_cisa_alerts"],
+            ["...", "execute_playbook_step_automation"]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Celery Task Duration"
+          period  = 300
+          stat    = "Average"
+          yAxis = {
+            left = {
+              min = 0
+            }
+          }
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ECS", "CPUUtilization", "ServiceName", aws_ecs_service.celery_worker.name, "ClusterName", aws_ecs_cluster.main.name],
+            [".", "MemoryUtilization", ".", ".", ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "Celery Worker Resource Usage"
+          period = 300
+          stat   = "Average"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 8
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ElastiCache", "CurrConnections", "CacheClusterId", "${aws_elasticache_replication_group.redis.replication_group_id}-001"],
+            [".", "GetTypeCmds", ".", "."],
+            [".", "SetTypeCmds", ".", "."],
+            [".", "KeyBasedCmds", ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "Redis Queue Activity"
+          period = 300
+          stat   = "Sum"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 16
+        y      = 6
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["ThreatCompass", "Errors", "Component", "CeleryWorker"],
+            [".", "CeleryTaskCount", "Status", "Failure"]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "Background Task Errors"
+          period = 300
+          stat   = "Sum"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-background-tasks-dashboard"
+  })
+}
+
+# Security and Audit Dashboard
+resource "aws_cloudwatch_dashboard" "security_audit" {
+  dashboard_name = "${local.name_prefix}-security-audit"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "HTTPCode_Target_4XX_Count", "LoadBalancer", aws_lb.main.arn_suffix],
+            [".", "HTTPCode_Target_5XX_Count", ".", "."],
+            ["AWS/WAFv2", "BlockedRequests", "WebACL", aws_wafv2_web_acl.main.name, "Region", var.aws_region, "Rule", "ALL"],
+            [".", "AllowedRequests", ".", ".", ".", ".", ".", "."]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Security Events - HTTP Errors & WAF"
+          period  = 300
+          stat    = "Sum"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["ThreatCompass", "UserActivity", "ActivityType", "login_success"],
+            ["...", "login_failure"],
+            ["...", "api_key_used"],
+            ["...", "password_reset"],
+            ["...", "account_locked"]
+          ]
+          view    = "timeSeries"
+          stacked = false
+          region  = var.aws_region
+          title   = "Authentication Events"
+          period  = 300
+          stat    = "Sum"
+        }
+      },
+      {
+        type   = "log"
+        x      = 0
+        y      = 6
+        width  = 24
+        height = 6
+
+        properties = {
+          query   = "SOURCE '/ecs/${local.name_prefix}/flask-app' | fields @timestamp, level, message, correlation_id, user_id\n| filter level = \"ERROR\" or level = \"CRITICAL\"\n| sort @timestamp desc\n| limit 50"
+          region  = var.aws_region
+          title   = "Recent Application Errors"
+          view    = "table"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-security-audit-dashboard"
+  })
+}
+
+# Cost Optimization Dashboard
+resource "aws_cloudwatch_dashboard" "cost_optimization" {
+  dashboard_name = "${local.name_prefix}-cost-optimization"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ECS", "RunningTaskCount", "ServiceName", aws_ecs_service.flask_app.name, "ClusterName", aws_ecs_cluster.main.name],
+            ["...", aws_ecs_service.celery_worker.name, ".", "."],
+            ["...", aws_ecs_service.celery_beat.name, ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = true
+          region = var.aws_region
+          title  = "ECS Task Count (Cost Driver)"
+          period = 300
+          stat   = "Average"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 8
+        y      = 0
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", aws_db_instance.main.identifier],
+            [".", "DatabaseConnections", ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "RDS Utilization"
+          period = 300
+          stat   = "Average"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 16
+        y      = 0
+        width  = 8
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ElastiCache", "CPUUtilization", "CacheClusterId", "${aws_elasticache_replication_group.redis.replication_group_id}-001"],
+            [".", "NetworkBytesIn", ".", "."],
+            [".", "NetworkBytesOut", ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "ElastiCache Utilization"
+          period = 300
+          stat   = "Average"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "ActiveConnectionCount", "LoadBalancer", aws_lb.main.arn_suffix],
+            [".", "NewConnectionCount", ".", "."],
+            [".", "ProcessedBytes", ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "Load Balancer Usage"
+          period = 300
+          stat   = "Sum"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+
+        properties = {
+          metrics = [
+            ["AWS/ECS", "CPUUtilization", "ServiceName", aws_ecs_service.flask_app.name, "ClusterName", aws_ecs_cluster.main.name],
+            [".", "MemoryUtilization", ".", ".", ".", "."]
+          ]
+          view   = "timeSeries"
+          stacked = false
+          region = var.aws_region
+          title  = "Resource Efficiency"
+          period = 300
+          stat   = "Average"
+          annotations = {
+            horizontal = [
+              {
+                label = "Right-sizing threshold"
+                value = 70
+              }
+            ]
+          }
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-cost-optimization-dashboard"
+  })
+}

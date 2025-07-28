@@ -1,0 +1,709 @@
+# cloudwatch_alarms.tf - CloudWatch Alarms and SNS Configuration
+
+# SNS Topics for Alerts
+resource "aws_sns_topic" "critical_alerts" {
+  name = "${local.name_prefix}-critical-alerts"
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-critical-alerts"
+  })
+}
+
+resource "aws_sns_topic" "warning_alerts" {
+  name = "${local.name_prefix}-warning-alerts"
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-warning-alerts"
+  })
+}
+
+resource "aws_sns_topic" "info_alerts" {
+  name = "${local.name_prefix}-info-alerts"
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-info-alerts"
+  })
+}
+
+# SNS Topic Subscriptions
+resource "aws_sns_topic_subscription" "critical_email" {
+  count     = var.alert_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.critical_alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+resource "aws_sns_topic_subscription" "warning_email" {
+  count     = var.alert_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.warning_alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+# Slack integration (optional)
+resource "aws_sns_topic_subscription" "critical_slack" {
+  count     = var.slack_webhook_url != "" ? 1 : 0
+  topic_arn = aws_sns_topic.critical_alerts.arn
+  protocol  = "https"
+  endpoint  = var.slack_webhook_url
+}
+
+# =============================================================================
+# APPLICATION LOAD BALANCER ALARMS
+# =============================================================================
+
+resource "aws_cloudwatch_metric_alarm" "alb_high_5xx_errors" {
+  alarm_name          = "${local.name_prefix}-alb-high-5xx-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "HTTPCode_Target_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "10"
+  alarm_description   = "High number of 5XX errors from ALB"
+  alarm_actions       = [aws_sns_topic.critical_alerts.arn]
+  ok_actions         = [aws_sns_topic.info_alerts.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-alb-high-5xx-errors"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "alb_high_4xx_errors" {
+  alarm_name          = "${local.name_prefix}-alb-high-4xx-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "3"
+  metric_name         = "HTTPCode_Target_4XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "50"
+  alarm_description   = "High number of 4XX errors from ALB"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-alb-high-4xx-errors"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "alb_high_response_time" {
+  alarm_name          = "${local.name_prefix}-alb-high-response-time"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "TargetResponseTime"
+  namespace           = "AWS/ApplicationELB"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "5"
+  alarm_description   = "High response time from ALB targets"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-alb-high-response-time"
+  })
+}
+
+# =============================================================================
+# ECS SERVICE ALARMS
+# =============================================================================
+
+resource "aws_cloudwatch_metric_alarm" "flask_app_high_cpu" {
+  alarm_name          = "${local.name_prefix}-flask-app-high-cpu"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "3"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "Flask app service high CPU utilization"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    ServiceName = aws_ecs_service.flask_app.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-flask-app-high-cpu"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "flask_app_high_memory" {
+  alarm_name          = "${local.name_prefix}-flask-app-high-memory"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "3"
+  metric_name         = "MemoryUtilization"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "85"
+  alarm_description   = "Flask app service high memory utilization"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    ServiceName = aws_ecs_service.flask_app.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-flask-app-high-memory"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "flask_app_task_count_low" {
+  alarm_name          = "${local.name_prefix}-flask-app-task-count-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "RunningTaskCount"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "1"
+  alarm_description   = "Flask app running task count is too low"
+  alarm_actions       = [aws_sns_topic.critical_alerts.arn]
+
+  dimensions = {
+    ServiceName = aws_ecs_service.flask_app.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-flask-app-task-count-low"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "celery_worker_high_cpu" {
+  alarm_name          = "${local.name_prefix}-celery-worker-high-cpu"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "3"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "Celery worker service high CPU utilization"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    ServiceName = aws_ecs_service.celery_worker.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-worker-high-cpu"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "celery_worker_no_tasks" {
+  alarm_name          = "${local.name_prefix}-celery-worker-no-tasks"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "RunningTaskCount"
+  namespace           = "AWS/ECS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "1"
+  alarm_description   = "Celery worker has no running tasks"
+  alarm_actions       = [aws_sns_topic.critical_alerts.arn]
+
+  dimensions = {
+    ServiceName = aws_ecs_service.celery_worker.name
+    ClusterName = aws_ecs_cluster.main.name
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-worker-no-tasks"
+  })
+}
+
+# =============================================================================
+# RDS DATABASE ALARMS
+# =============================================================================
+
+resource "aws_cloudwatch_metric_alarm" "rds_high_cpu" {
+  alarm_name          = "${local.name_prefix}-rds-high-cpu"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "RDS instance high CPU utilization"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.main.identifier
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-rds-high-cpu"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "rds_high_connections" {
+  alarm_name          = "${local.name_prefix}-rds-high-connections"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "DatabaseConnections"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "RDS instance high connection count"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.main.identifier
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-rds-high-connections"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "rds_low_freeable_memory" {
+  alarm_name          = "${local.name_prefix}-rds-low-freeable-memory"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "FreeableMemory"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "1000000000" # 1GB in bytes
+  alarm_description   = "RDS instance low freeable memory"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.main.identifier
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-rds-low-freeable-memory"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "rds_low_free_storage" {
+  alarm_name          = "${local.name_prefix}-rds-low-free-storage"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "FreeStorageSpace"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "10000000000" # 10GB in bytes
+  alarm_description   = "RDS instance low free storage space"
+  alarm_actions       = [aws_sns_topic.critical_alerts.arn]
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.main.identifier
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-rds-low-free-storage"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "rds_high_read_latency" {
+  alarm_name          = "${local.name_prefix}-rds-high-read-latency"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "3"
+  metric_name         = "ReadLatency"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "0.5"
+  alarm_description   = "RDS instance high read latency"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.main.identifier
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-rds-high-read-latency"
+  })
+}
+
+# =============================================================================
+# REDIS/ELASTICACHE ALARMS
+# =============================================================================
+
+resource "aws_cloudwatch_metric_alarm" "redis_high_cpu" {
+  alarm_name          = "${local.name_prefix}-redis-high-cpu"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ElastiCache"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "80"
+  alarm_description   = "Redis high CPU utilization"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    CacheClusterId = "${aws_elasticache_replication_group.redis.replication_group_id}-001"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-redis-high-cpu"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "redis_high_memory" {
+  alarm_name          = "${local.name_prefix}-redis-high-memory"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "DatabaseMemoryUsagePercentage"
+  namespace           = "AWS/ElastiCache"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "85"
+  alarm_description   = "Redis high memory usage"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    CacheClusterId = "${aws_elasticache_replication_group.redis.replication_group_id}-001"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-redis-high-memory"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "redis_high_connections" {
+  alarm_name          = "${local.name_prefix}-redis-high-connections"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CurrConnections"
+  namespace           = "AWS/ElastiCache"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "100"
+  alarm_description   = "Redis high connection count"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    CacheClusterId = "${aws_elasticache_replication_group.redis.replication_group_id}-001"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-redis-high-connections"
+  })
+}
+
+# =============================================================================
+# APPLICATION-SPECIFIC ALARMS
+# =============================================================================
+
+resource "aws_cloudwatch_metric_alarm" "high_application_errors" {
+  alarm_name          = "${local.name_prefix}-high-application-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "Errors"
+  namespace           = "ThreatCompass"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "10"
+  alarm_description   = "High number of application errors"
+  alarm_actions       = [aws_sns_topic.critical_alerts.arn]
+
+  dimensions = {
+    Component = "FlaskApp"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-high-application-errors"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "celery_task_failures" {
+  alarm_name          = "${local.name_prefix}-celery-task-failures"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CeleryTaskCount"
+  namespace           = "ThreatCompass"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "5"
+  alarm_description   = "High number of Celery task failures"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    Status = "Failure"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-task-failures"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "slow_api_responses" {
+  alarm_name          = "${local.name_prefix}-slow-api-responses"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "3"
+  metric_name         = "RequestDuration"
+  namespace           = "ThreatCompass"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "5000" # 5 seconds in milliseconds
+  alarm_description   = "API responses are too slow"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    Service = "FlaskApp"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-slow-api-responses"
+  })
+}
+
+resource "aws_cloudwatch_metric_alarm" "enrichment_failures" {
+  alarm_name          = "${local.name_prefix}-enrichment-failures"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "EnrichmentAttempts"
+  namespace           = "ThreatCompass"
+  period              = "900" # 15 minutes
+  statistic           = "Sum"
+  threshold           = "10"
+  alarm_description   = "High number of IOC enrichment failures"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    Status = "Failure"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-enrichment-failures"
+  })
+}
+
+# =============================================================================
+# WAF SECURITY ALARMS
+# =============================================================================
+
+resource "aws_cloudwatch_metric_alarm" "waf_blocked_requests" {
+  alarm_name          = "${local.name_prefix}-waf-high-blocked-requests"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "BlockedRequests"
+  namespace           = "AWS/WAFv2"
+  period              = "300"
+  statistic           = "Sum"
+  threshold           = "100"
+  alarm_description   = "High number of requests blocked by WAF"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    WebACL = aws_wafv2_web_acl.main.name
+    Region = var.aws_region
+    Rule   = "ALL"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-waf-high-blocked-requests"
+  })
+}
+
+# =============================================================================
+# COMPOSITE ALARMS
+# =============================================================================
+
+resource "aws_cloudwatch_composite_alarm" "application_health_critical" {
+  alarm_name          = "${local.name_prefix}-application-health-critical"
+  alarm_description   = "Critical application health issues detected"
+  alarm_actions       = [aws_sns_topic.critical_alerts.arn]
+  ok_actions         = [aws_sns_topic.info_alerts.arn]
+
+  alarm_rule = join(" OR ", [
+    "ALARM(${aws_cloudwatch_metric_alarm.alb_high_5xx_errors.alarm_name})",
+    "ALARM(${aws_cloudwatch_metric_alarm.flask_app_task_count_low.alarm_name})",
+    "ALARM(${aws_cloudwatch_metric_alarm.celery_worker_no_tasks.alarm_name})",
+    "ALARM(${aws_cloudwatch_metric_alarm.rds_low_free_storage.alarm_name})",
+    "ALARM(${aws_cloudwatch_metric_alarm.high_application_errors.alarm_name})"
+  ])
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-application-health-critical"
+  })
+}
+
+resource "aws_cloudwatch_composite_alarm" "performance_degradation" {
+  alarm_name          = "${local.name_prefix}-performance-degradation"
+  alarm_description   = "Performance degradation detected"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  alarm_rule = join(" OR ", [
+    "ALARM(${aws_cloudwatch_metric_alarm.alb_high_response_time.alarm_name})",
+    "ALARM(${aws_cloudwatch_metric_alarm.flask_app_high_cpu.alarm_name})",
+    "ALARM(${aws_cloudwatch_metric_alarm.flask_app_high_memory.alarm_name})",
+    "ALARM(${aws_cloudwatch_metric_alarm.rds_high_cpu.alarm_name})",
+    "ALARM(${aws_cloudwatch_metric_alarm.rds_high_read_latency.alarm_name})",
+    "ALARM(${aws_cloudwatch_metric_alarm.slow_api_responses.alarm_name})"
+  ])
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-performance-degradation"
+  })
+}
+
+# =============================================================================
+# SNS TOPIC POLICIES AND LAMBDA INTEGRATIONS
+# =============================================================================
+
+# SNS Topic Policy for CloudWatch Alarms
+resource "aws_sns_topic_policy" "critical_alerts_policy" {
+  arn = aws_sns_topic.critical_alerts.arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudwatch.amazonaws.com"
+        }
+        Action = "SNS:Publish"
+        Resource = aws_sns_topic.critical_alerts.arn
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_sns_topic_policy" "warning_alerts_policy" {
+  arn = aws_sns_topic.warning_alerts.arn
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudwatch.amazonaws.com"
+        }
+        Action = "SNS:Publish"
+        Resource = aws_sns_topic.warning_alerts.arn
+        Condition = {
+          StringEquals = {
+            "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
+      }
+    ]
+  })
+}
+
+# Lambda function for enhanced alert processing (optional)
+resource "aws_lambda_function" "alert_processor" {
+  count = var.enable_enhanced_alerting ? 1 : 0
+
+  filename         = "alert_processor.zip"
+  function_name    = "${local.name_prefix}-alert-processor"
+  role            = aws_iam_role.lambda_alert_processor[0].arn
+  handler         = "index.handler"
+  runtime         = "python3.11"
+  timeout         = 60
+
+  environment {
+    variables = {
+      SLACK_WEBHOOK_URL = var.slack_webhook_url
+      PAGERDUTY_API_KEY = var.pagerduty_api_key
+    }
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-alert-processor"
+  })
+}
+
+resource "aws_iam_role" "lambda_alert_processor" {
+  count = var.enable_enhanced_alerting ? 1 : 0
+
+  name = "${local.name_prefix}-lambda-alert-processor-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-lambda-alert-processor-role"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_alert_processor_basic" {
+  count = var.enable_enhanced_alerting ? 1 : 0
+
+  role       = aws_iam_role.lambda_alert_processor[0].name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# SNS subscription to Lambda for enhanced processing
+resource "aws_sns_topic_subscription" "critical_alerts_lambda" {
+  count     = var.enable_enhanced_alerting ? 1 : 0
+  topic_arn = aws_sns_topic.critical_alerts.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.alert_processor[0].arn
+}
+
+resource "aws_lambda_permission" "allow_sns_critical" {
+  count         = var.enable_enhanced_alerting ? 1 : 0
+  statement_id  = "AllowExecutionFromSNSCritical"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.alert_processor[0].function_name
+  principal     = "sns.amazonaws.com"
+  source_arn    = aws_sns_topic.critical_alerts.arn
+}
+
+# =============================================================================
+# OUTPUTS
+# =============================================================================
+
+output "sns_topic_arns" {
+  description = "ARNs of SNS topics for alerting"
+  value = {
+    critical = aws_sns_topic.critical_alerts.arn
+    warning  = aws_sns_topic.warning_alerts.arn
+    info     = aws_sns_topic.info_alerts.arn
+  }
+}
+
+output "critical_alarms" {
+  description = "List of critical alarm names"
+  value = [
+    aws_cloudwatch_metric_alarm.alb_high_5xx_errors.alarm_name,
+    aws_cloudwatch_metric_alarm.flask_app_task_count_low.alarm_name,
+    aws_cloudwatch_metric_alarm.celery_worker_no_tasks.alarm_name,
+    aws_cloudwatch_metric_alarm.rds_low_free_storage.alarm_name,
+    aws_cloudwatch_metric_alarm.high_application_errors.alarm_name
+  ]
+}

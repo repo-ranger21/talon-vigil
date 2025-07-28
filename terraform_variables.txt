@@ -1,0 +1,196 @@
+# variables.tf - Input variables for ThreatCompass infrastructure
+
+variable "aws_region" {
+  description = "AWS region for resources"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "environment" {
+  description = "Environment name (production, staging, development)"
+  type        = string
+  default     = "production"
+  
+  validation {
+    condition     = contains(["production", "staging", "development"], var.environment)
+    error_message = "Environment must be production, staging, or development."
+  }
+}
+
+variable "project_name" {
+  description = "Name of the project"
+  type        = string
+  default     = "threatcompass"
+}
+
+# VPC Configuration
+variable "vpc_cidr" {
+  description = "CIDR block for VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "public_subnet_cidrs" {
+  description = "CIDR blocks for public subnets"
+  type        = list(string)
+  default     = ["10.0.1.0/24", "10.0.2.0/24"]
+}
+
+variable "private_subnet_cidrs" {
+  description = "CIDR blocks for private subnets"
+  type        = list(string)
+  default     = ["10.0.10.0/24", "10.0.20.0/24"]
+}
+
+variable "database_subnet_cidrs" {
+  description = "CIDR blocks for database subnets"
+  type        = list(string)
+  default     = ["10.0.30.0/24", "10.0.40.0/24"]
+}
+
+# Database Configuration
+variable "db_instance_class" {
+  description = "RDS instance class"
+  type        = string
+  default     = "db.t3.medium"
+}
+
+variable "db_allocated_storage" {
+  description = "RDS allocated storage in GB"
+  type        = number
+  default     = 100
+}
+
+variable "db_max_allocated_storage" {
+  description = "RDS maximum allocated storage in GB for autoscaling"
+  type        = number
+  default     = 1000
+}
+
+variable "db_backup_retention_period" {
+  description = "RDS backup retention period in days"
+  type        = number
+  default     = 7
+}
+
+variable "db_backup_window" {
+  description = "RDS backup window"
+  type        = string
+  default     = "03:00-04:00"
+}
+
+variable "db_maintenance_window" {
+  description = "RDS maintenance window"
+  type        = string
+  default     = "Sun:04:00-Sun:05:00"
+}
+
+# Redis Configuration
+variable "redis_node_type" {
+  description = "ElastiCache Redis node type"
+  type        = string
+  default     = "cache.t3.medium"
+}
+
+variable "redis_num_cache_nodes" {
+  description = "Number of Redis cache nodes"
+  type        = number
+  default     = 1
+}
+
+# ECS Configuration
+variable "flask_cpu" {
+  description = "CPU units for Flask container (1024 = 1 vCPU)"
+  type        = number
+  default     = 512
+}
+
+variable "flask_memory" {
+  description = "Memory for Flask container in MB"
+  type        = number
+  default     = 1024
+}
+
+variable "celery_worker_cpu" {
+  description = "CPU units for Celery worker container"
+  type        = number
+  default     = 256
+}
+
+variable "celery_worker_memory" {
+  description = "Memory for Celery worker container in MB"
+  type        = number
+  default     = 512
+}
+
+variable "celery_beat_cpu" {
+  description = "CPU units for Celery beat container"
+  type        = number
+  default     = 256
+}
+
+variable "celery_beat_memory" {
+  description = "Memory for Celery beat container in MB"
+  type        = number
+  default     = 512
+}
+
+# Auto Scaling Configuration
+variable "flask_min_capacity" {
+  description = "Minimum number of Flask tasks"
+  type        = number
+  default     = 2
+}
+
+variable "flask_max_capacity" {
+  description = "Maximum number of Flask tasks"
+  type        = number
+  default     = 10
+}
+
+variable "celery_worker_min_capacity" {
+  description = "Minimum number of Celery worker tasks"
+  type        = number
+  default     = 1
+}
+
+variable "celery_worker_max_capacity" {
+  description = "Maximum number of Celery worker tasks"
+  type        = number
+  default     = 5
+}
+
+# Domain Configuration
+variable "domain_name" {
+  description = "Domain name for the application (optional)"
+  type        = string
+  default     = ""
+}
+
+variable "certificate_arn" {
+  description = "ARN of SSL certificate in ACM (optional)"
+  type        = string
+  default     = ""
+}
+
+# External API Keys (stored in Secrets Manager)
+variable "virustotal_api_key" {
+  description = "VirusTotal API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "abuseipdb_api_key" {
+  description = "AbuseIPDB API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "smtp_password" {
+  description = "SMTP password for email notifications"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

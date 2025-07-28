@@ -1,0 +1,121 @@
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and customize for your deployment
+
+# AWS Configuration
+aws_region = "us-east-1"
+environment = "production"  # Options: production, staging, development
+project_name = "threatcompass"
+
+# Networking Configuration
+vpc_cidr = "10.0.0.0/16"
+public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.10.0/24", "10.0.20.0/24"]
+database_subnet_cidrs = ["10.0.30.0/24", "10.0.40.0/24"]
+
+# Domain and SSL Configuration (Optional but recommended)
+# If you have a domain, ACM will automatically provision SSL certificates
+domain_name = ""  # e.g., "threatcompass.yourdomain.com"
+certificate_arn = ""  # Leave empty to auto-create with ACM
+
+# Database Configuration
+db_instance_class = "db.t3.medium"  # Options: db.t3.micro, db.t3.small, db.t3.medium, db.t3.large
+db_allocated_storage = 100  # GB
+db_max_allocated_storage = 1000  # GB (for auto-scaling)
+db_backup_retention_period = 7  # days
+db_backup_window = "03:00-04:00"  # UTC
+db_maintenance_window = "Sun:04:00-Sun:05:00"  # UTC
+
+# Redis Configuration
+redis_node_type = "cache.t3.medium"  # Options: cache.t3.micro, cache.t3.small, cache.t3.medium
+redis_num_cache_nodes = 1
+
+# ECS Flask App Configuration
+flask_cpu = 512  # CPU units (1024 = 1 vCPU)
+flask_memory = 1024  # MB
+flask_min_capacity = 2  # Minimum number of tasks
+flask_max_capacity = 10  # Maximum number of tasks
+
+# ECS Celery Worker Configuration
+celery_worker_cpu = 256
+celery_worker_memory = 512
+celery_worker_min_capacity = 1
+celery_worker_max_capacity = 5
+
+# ECS Celery Beat Configuration
+celery_beat_cpu = 256
+celery_beat_memory = 512
+
+# External API Keys (Required for threat intelligence enrichment)
+# Get these from the respective service providers
+virustotal_api_key = ""  # From https://www.virustotal.com/gui/my-apikey
+abuseipdb_api_key = ""   # From https://www.abuseipdb.com/account/api
+
+# SMTP Configuration (for email notifications)
+smtp_password = ""  # Your SMTP service password (e.g., AWS SES, SendGrid)
+
+# Cost Optimization Settings
+# Set to true to enable cross-region backup (increases costs)
+enable_cross_region_backup = false
+
+# Performance Settings
+# Adjust based on expected load
+enable_performance_insights = true
+enable_container_insights = true
+
+# Development/Testing Overrides
+# Uncomment and modify for non-production environments
+# 
+# # Smaller instances for development
+# db_instance_class = "db.t3.micro"
+# db_allocated_storage = 20
+# redis_node_type = "cache.t3.micro"
+# flask_cpu = 256
+# flask_memory = 512
+# flask_min_capacity = 1
+# flask_max_capacity = 2
+# celery_worker_min_capacity = 1
+# celery_worker_max_capacity = 1
+
+# Security Settings
+# These are automatically configured but can be customized
+
+# # Custom VPC CIDR for additional security
+# vpc_cidr = "172.16.0.0/16"
+# public_subnet_cidrs = ["172.16.1.0/24", "172.16.2.0/24"]
+# private_subnet_cidrs = ["172.16.10.0/24", "172.16.20.0/24"]
+# database_subnet_cidrs = ["172.16.30.0/24", "172.16.40.0/24"]
+
+# Multi-Region Configuration (Advanced)
+# Uncomment if deploying across multiple regions
+# 
+# backup_region = "us-west-2"
+# enable_cross_region_replication = true
+
+# Monitoring and Alerting
+# Email for CloudWatch alarms (optional)
+# alert_email = "admin@yourdomain.com"
+
+# Compliance Settings
+# Extended retention for audit logs
+# audit_log_retention_days = 2555  # 7 years
+# enable_cloudtrail = true
+# enable_config = true
+
+# High Availability Settings
+# For mission-critical deployments
+# rds_multi_az = true  # Already enabled by default
+# redis_num_cache_clusters = 2  # For Redis cluster mode
+# flask_min_capacity = 3  # Ensure capacity across AZs
+
+# Example Production Configuration for High-Traffic Deployment:
+# db_instance_class = "db.r5.xlarge"
+# db_allocated_storage = 500
+# redis_node_type = "cache.r5.large"
+# flask_cpu = 1024
+# flask_memory = 2048
+# flask_min_capacity = 4
+# flask_max_capacity = 20
+# celery_worker_cpu = 512
+# celery_worker_memory = 1024
+# celery_worker_min_capacity = 2
+# celery_worker_max_capacity = 10

@@ -1,0 +1,63 @@
+# ThreatCompass AWS Infrastructure - Main Configuration
+# This file defines the core AWS infrastructure for ThreatCompass
+
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+  
+  # Configure S3 backend for state management (update bucket name)
+  backend "s3" {
+    bucket         = "threatcompass-terraform-state"
+    key            = "production/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "threatcompass-terraform-locks"
+  }
+}
+
+# Configure the AWS Provider
+provider "aws" {
+  region = var.aws_region
+  
+  default_tags {
+    tags = {
+      Environment = var.environment
+      Project     = "ThreatCompass"
+      ManagedBy   = "Terraform"
+    }
+  }
+}
+
+# Data sources for availability zones
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+# Data source for current caller identity
+data "aws_caller_identity" "current" {}
+
+# Local values for consistent naming
+locals {
+  name_prefix = "${var.project_name}-${var.environment}"
+  
+  common_tags = {
+    Environment = var.environment
+    Project     = var.project_name
+    ManagedBy   = "Terraform"
+  }
+  
+  # Database configuration
+  db_port = 5432
+  redis_port = 6379
+  
+  # Container ports
+  flask_port = 5000
+  
+  # Availability zones (use first 2 for Multi-AZ)
+  azs = slice(data.aws_availability_zones.available.names, 0, 2)
+}

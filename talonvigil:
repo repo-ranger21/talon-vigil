@@ -1,0 +1,23 @@
+talonvigil/
+├── app.py
+├── local_dev_server.py
+├── threat_report_reader.py
+├── azure_ip_hopping_function.py
+├── c2_redis_cache.py
+├── osint_eventhub_config.py
+├── templates/
+│   ├── index.html
+│   ├── base.html
+│   ├── auth/
+│   └── dashboard/
+├── static/
+│   ├── css/
+│   ├── js/
+│   └── images/
+├── docs/
+│   ├── C2_REDIS_STRATEGY.md
+│   ├── OSINT_EVENTHUB_STRATEGY.md
+│   └── completion_summary.md
+├── azure_iam/
+│   └── micro_segmentation_plan.py
+└── threat intelligence files

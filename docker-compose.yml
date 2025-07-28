@@ -1,0 +1,28 @@
+
+services:
+  web:
+    build: .
+    # ...
+    depends_on:
+      - db
+      - redis
+  db:
+    image: postgres:14
+    # ...
+  redis:
+    image: redis:6
+    # ...
+  celery_worker:
+    build: .
+    command: celery -A app.celery worker --loglevel=info
+    depends_on:
+      - web
+      - redis
+      - db
+  celery_beat:
+    build: .
+    command: celery -A app.celery beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      - web
+      - redis
+      - db

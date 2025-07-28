@@ -1,0 +1,2 @@
+# Update local_dev_server.py to use new path
+# No changes needed as it uses relative paths

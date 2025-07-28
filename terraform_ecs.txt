@@ -1,0 +1,380 @@
+# ecs.tf - ECS Cluster and Task Definitions
+
+# ECS Cluster
+resource "aws_ecs_cluster" "main" {
+  name = "${local.name_prefix}-cluster"
+
+  configuration {
+    execute_command_configuration {
+      logging = "OVERRIDE"
+      log_configuration {
+        cloud_watch_log_group_name = aws_cloudwatch_log_group.ecs_exec.name
+      }
+    }
+  }
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-ecs-cluster"
+  })
+}
+
+# CloudWatch Log Groups for ECS
+resource "aws_cloudwatch_log_group" "flask_app" {
+  name              = "/ecs/${local.name_prefix}/flask-app"
+  retention_in_days = 30
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-flask-app-logs"
+  })
+}
+
+resource "aws_cloudwatch_log_group" "celery_worker" {
+  name              = "/ecs/${local.name_prefix}/celery-worker"
+  retention_in_days = 30
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-worker-logs"
+  })
+}
+
+resource "aws_cloudwatch_log_group" "celery_beat" {
+  name              = "/ecs/${local.name_prefix}/celery-beat"
+  retention_in_days = 30
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-beat-logs"
+  })
+}
+
+resource "aws_cloudwatch_log_group" "ecs_exec" {
+  name              = "/ecs/${local.name_prefix}/exec"
+  retention_in_days = 7
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-ecs-exec-logs"
+  })
+}
+
+# ECS Task Execution Role
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "${local.name_prefix}-ecs-task-execution-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-ecs-task-execution-role"
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+# Additional policy for Secrets Manager access
+resource "aws_iam_role_policy" "ecs_secrets_policy" {
+  name = "${local.name_prefix}-ecs-secrets-policy"
+  role = aws_iam_role.ecs_task_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = [
+          aws_secretsmanager_secret.db_credentials.arn,
+          aws_secretsmanager_secret.redis_credentials.arn,
+          aws_secretsmanager_secret.app_secrets.arn
+        ]
+      }
+    ]
+  })
+}
+
+# ECS Task Role (for tasks to access AWS services)
+resource "aws_iam_role" "ecs_task_role" {
+  name = "${local.name_prefix}-ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-ecs-task-role"
+  })
+}
+
+# Policy for ECS tasks to access S3, SES, and other AWS services
+resource "aws_iam_role_policy" "ecs_task_policy" {
+  name = "${local.name_prefix}-ecs-task-policy"
+  role = aws_iam_role.ecs_task_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+        Resource = "${aws_s3_bucket.logs.arn}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket"
+        ]
+        Resource = aws_s3_bucket.logs.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = [
+          aws_secretsmanager_secret.app_secrets.arn
+        ]
+      }
+    ]
+  })
+}
+
+# Flask App Task Definition
+resource "aws_ecs_task_definition" "flask_app" {
+  family                   = "${local.name_prefix}-flask-app"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.flask_cpu
+  memory                   = var.flask_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn           = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name  = "flask-app"
+      image = "${aws_ecr_repository.flask_app.repository_url}:latest"
+      
+      portMappings = [
+        {
+          containerPort = local.flask_port
+          protocol      = "tcp"
+        }
+      ]
+
+      environment = [
+        {
+          name  = "ENVIRONMENT"
+          value = var.environment
+        },
+        {
+          name  = "AWS_DEFAULT_REGION"
+          value = var.aws_region
+        }
+      ]
+
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = "${aws_secretsmanager_secret.db_credentials.arn}:url::"
+        },
+        {
+          name      = "REDIS_URL"
+          valueFrom = "${aws_secretsmanager_secret.redis_credentials.arn}:url::"
+        },
+        {
+          name      = "FLASK_APP_SECRET_KEY"
+          valueFrom = "${aws_secretsmanager_secret.app_secrets.arn}:flask_secret_key::"
+        },
+        {
+          name      = "VT_API_KEY"
+          valueFrom = "${aws_secretsmanager_secret.app_secrets.arn}:virustotal_api_key::"
+        },
+        {
+          name      = "ABUSEIPDB_API_KEY"
+          valueFrom = "${aws_secretsmanager_secret.app_secrets.arn}:abuseipdb_api_key::"
+        }
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.flask_app.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+
+      healthCheck = {
+        command = ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+        interval = 30
+        timeout = 5
+        retries = 3
+        startPeriod = 60
+      }
+
+      essential = true
+    }
+  ])
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-flask-app-task"
+  })
+}
+
+# Celery Worker Task Definition
+resource "aws_ecs_task_definition" "celery_worker" {
+  family                   = "${local.name_prefix}-celery-worker"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.celery_worker_cpu
+  memory                   = var.celery_worker_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn           = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name    = "celery-worker"
+      image   = "${aws_ecr_repository.celery_worker.repository_url}:latest"
+      command = ["celery", "-A", "app.celery", "worker", "--loglevel=info", "--concurrency=4"]
+
+      environment = [
+        {
+          name  = "ENVIRONMENT"
+          value = var.environment
+        },
+        {
+          name  = "AWS_DEFAULT_REGION"
+          value = var.aws_region
+        }
+      ]
+
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = "${aws_secretsmanager_secret.db_credentials.arn}:url::"
+        },
+        {
+          name      = "REDIS_URL"
+          valueFrom = "${aws_secretsmanager_secret.redis_credentials.arn}:url::"
+        },
+        {
+          name      = "VT_API_KEY"
+          valueFrom = "${aws_secretsmanager_secret.app_secrets.arn}:virustotal_api_key::"
+        },
+        {
+          name      = "ABUSEIPDB_API_KEY"
+          valueFrom = "${aws_secretsmanager_secret.app_secrets.arn}:abuseipdb_api_key::"
+        }
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.celery_worker.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+
+      essential = true
+    }
+  ])
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-worker-task"
+  })
+}
+
+# Celery Beat Task Definition
+resource "aws_ecs_task_definition" "celery_beat" {
+  family                   = "${local.name_prefix}-celery-beat"
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.celery_beat_cpu
+  memory                   = var.celery_beat_memory
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn           = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name    = "celery-beat"
+      image   = "${aws_ecr_repository.celery_beat.repository_url}:latest"
+      command = ["celery", "-A", "app.celery", "beat", "--loglevel=info"]
+
+      environment = [
+        {
+          name  = "ENVIRONMENT"
+          value = var.environment
+        },
+        {
+          name  = "AWS_DEFAULT_REGION"
+          value = var.aws_region
+        }
+      ]
+
+      secrets = [
+        {
+          name      = "DATABASE_URL"
+          valueFrom = "${aws_secretsmanager_secret.db_credentials.arn}:url::"
+        },
+        {
+          name      = "REDIS_URL"
+          valueFrom = "${aws_secretsmanager_secret.redis_credentials.arn}:url::"
+        }
+      ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.celery_beat.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+
+      essential = true
+    }
+  ])
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-beat-task"
+  })
+}

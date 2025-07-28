@@ -1,0 +1,265 @@
+# ecs_services.tf - ECS Services and Auto Scaling configuration
+
+# Flask App ECS Service
+resource "aws_ecs_service" "flask_app" {
+  name            = "${local.name_prefix}-flask-app"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.flask_app.arn
+  desired_count   = var.flask_min_capacity
+  launch_type     = "FARGATE"
+
+  # Platform version for Fargate
+  platform_version = "LATEST"
+
+  network_configuration {
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    subnets         = aws_subnet.private[*].id
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.flask_app.arn
+    container_name   = "flask-app"
+    container_port   = local.flask_port
+  }
+
+  # Enable ECS Exec for debugging
+  enable_execute_command = true
+
+  # Deployment configuration
+  deployment_configuration {
+    maximum_percent         = 200
+    minimum_healthy_percent = 50
+    
+    deployment_circuit_breaker {
+      enable   = true
+      rollback = true
+    }
+  }
+
+  # Service discovery (optional)
+  # service_registries {
+  #   registry_arn = aws_service_discovery_service.flask_app.arn
+  # }
+
+  depends_on = [
+    aws_lb_listener.https,
+    aws_iam_role_policy_attachment.ecs_task_execution_role_policy,
+  ]
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-flask-app-service"
+  })
+}
+
+# Celery Worker ECS Service
+resource "aws_ecs_service" "celery_worker" {
+  name            = "${local.name_prefix}-celery-worker"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.celery_worker.arn
+  desired_count   = var.celery_worker_min_capacity
+  launch_type     = "FARGATE"
+
+  platform_version = "LATEST"
+
+  network_configuration {
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    subnets         = aws_subnet.private[*].id
+    assign_public_ip = false
+  }
+
+  enable_execute_command = true
+
+  deployment_configuration {
+    maximum_percent         = 200
+    minimum_healthy_percent = 50
+    
+    deployment_circuit_breaker {
+      enable   = true
+      rollback = true
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ecs_task_execution_role_policy,
+  ]
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-worker-service"
+  })
+}
+
+# Celery Beat ECS Service (only 1 instance needed)
+resource "aws_ecs_service" "celery_beat" {
+  name            = "${local.name_prefix}-celery-beat"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.celery_beat.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  platform_version = "LATEST"
+
+  network_configuration {
+    security_groups  = [aws_security_group.ecs_tasks.id]
+    subnets         = aws_subnet.private[*].id
+    assign_public_ip = false
+  }
+
+  enable_execute_command = true
+
+  deployment_configuration {
+    maximum_percent         = 100
+    minimum_healthy_percent = 0
+    
+    deployment_circuit_breaker {
+      enable   = true
+      rollback = true
+    }
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.ecs_task_execution_role_policy,
+  ]
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-beat-service"
+  })
+}
+
+# Auto Scaling Target for Flask App
+resource "aws_appautoscaling_target" "flask_app" {
+  max_capacity       = var.flask_max_capacity
+  min_capacity       = var.flask_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.flask_app.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-flask-app-scaling-target"
+  })
+}
+
+# Auto Scaling Target for Celery Worker
+resource "aws_appautoscaling_target" "celery_worker" {
+  max_capacity       = var.celery_worker_max_capacity
+  min_capacity       = var.celery_worker_min_capacity
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.celery_worker.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-celery-worker-scaling-target"
+  })
+}
+
+# Auto Scaling Policy for Flask App - CPU Based
+resource "aws_appautoscaling_policy" "flask_app_cpu" {
+  name               = "${local.name_prefix}-flask-app-cpu-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.flask_app.resource_id
+  scalable_dimension = aws_appautoscaling_target.flask_app.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.flask_app.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+    target_value       = 70.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 300
+  }
+}
+
+# Auto Scaling Policy for Flask App - Memory Based
+resource "aws_appautoscaling_policy" "flask_app_memory" {
+  name               = "${local.name_prefix}-flask-app-memory-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.flask_app.resource_id
+  scalable_dimension = aws_appautoscaling_target.flask_app.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.flask_app.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageMemoryUtilization"
+    }
+    target_value       = 80.0
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 300
+  }
+}
+
+# Auto Scaling Policy for Flask App - ALB Request Count
+resource "aws_appautoscaling_policy" "flask_app_requests" {
+  name               = "${local.name_prefix}-flask-app-requests-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.flask_app.resource_id
+  scalable_dimension = aws_appautoscaling_target.flask_app.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.flask_app.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ALBRequestCountPerTarget"
+      resource_label         = "${aws_lb.main.arn_suffix}/${aws_lb_target_group.flask_app.arn_suffix}"
+    }
+    target_value       = 1000.0  # Requests per minute per target
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 300
+  }
+}
+
+# Auto Scaling Policy for Celery Worker - Custom Metric (Queue Depth)
+resource "aws_appautoscaling_policy" "celery_worker_queue" {
+  name               = "${local.name_prefix}-celery-worker-queue-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.celery_worker.resource_id
+  scalable_dimension = aws_appautoscaling_target.celery_worker.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.celery_worker.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    customized_metric_specification {
+      metric_name = "CeleryQueueDepth"
+      namespace   = "ThreatCompass/Celery"
+      statistic   = "Average"
+      
+      dimensions = {
+        QueueName = "default"
+      }
+    }
+    target_value       = 5.0  # Target 5 messages per worker
+    scale_in_cooldown  = 300
+    scale_out_cooldown = 180
+  }
+}
+
+# Service Discovery Namespace (optional)
+# resource "aws_service_discovery_private_dns_namespace" "main" {
+#   name        = "${local.name_prefix}.local"
+#   description = "Private DNS namespace for ThreatCompass services"
+#   vpc         = aws_vpc.main.id
+# 
+#   tags = merge(local.common_tags, {
+#     Name = "${local.name_prefix}-service-discovery"
+#   })
+# }
+# 
+# # Service Discovery Service for Flask App
+# resource "aws_service_discovery_service" "flask_app" {
+#   name = "flask-app"
+# 
+#   dns_config {
+#     namespace_id = aws_service_discovery_private_dns_namespace.main.id
+# 
+#     dns_records {
+#       ttl  = 10
+#       type = "A"
+#     }
+# 
+#     routing_policy = "MULTIVALUE"
+#   }
+# 
+#   health_check_grace_period_seconds = 30
+# 
+#   tags = merge(local.common_tags, {
+#     Name = "${local.name_prefix}-flask-app-discovery"
+#   })
+# }

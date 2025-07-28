@@ -1,0 +1,393 @@
+# rds_autoscaling.tf - RDS Auto-Scaling and Management Configuration
+
+# =============================================================================
+# RDS STORAGE AUTO-SCALING
+# =============================================================================
+
+# Storage auto-scaling is already enabled in the main RDS configuration
+# via the max_allocated_storage parameter, but here's the explicit configuration:
+
+resource "aws_db_instance" "main" {
+  # ... existing configuration from rds.tf ...
+  
+  # Storage auto-scaling configuration
+  allocated_storage     = var.db_allocated_storage      # Initial storage (100GB)
+  max_allocated_storage = var.db_max_allocated_storage  # Maximum auto-scale (1TB)
+  
+  # Enable storage auto-scaling
+  storage_encrypted = true
+  storage_type     = "gp3"
+  
+  # IOPS configuration for gp3
+  iops                = var.db_iops
+  storage_throughput  = var.db_storage_throughput
+  
+  # Performance Insights for monitoring scaling needs
+  performance_insights_enabled          = true
+  performance_insights_retention_period = 7
+  
+  # Enhanced monitoring for better scaling decisions
+  monitoring_interval = 60
+  monitoring_role_arn = aws_iam_role.rds_monitoring.arn
+  
+  tags = merge(local.common_tags, {
+    Name               = "${local.name_prefix}-postgresql"
+    AutoScalingEnabled = "true"
+  })
+}
+
+# =============================================================================
+# RDS PROXY FOR CONNECTION POOLING
+# =============================================================================
+
+# RDS Proxy helps manage database connections during scaling events
+resource "aws_db_proxy" "main" {
+  count = var.enable_rds_proxy ? 1 : 0
+  
+  name                   = "${local.name_prefix}-rds-proxy"
+  engine_family         = "POSTGRESQL"
+  auth {
+    auth_scheme = "SECRETS"
+    secret_arn  = aws_secretsmanager_secret.db_credentials.arn
+  }
+  
+  role_arn               = aws_iam_role.rds_proxy[0].arn
+  vpc_subnet_ids        = aws_subnet.database[*].id
+  require_tls           = true
+  
+  target {
+    db_instance_identifier = aws_db_instance.main.identifier
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-rds-proxy"
+  })
+}
+
+# IAM role for RDS Proxy
+resource "aws_iam_role" "rds_proxy" {
+  count = var.enable_rds_proxy ? 1 : 0
+  
+  name = "${local.name_prefix}-rds-proxy-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "rds.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-rds-proxy-role"
+  })
+}
+
+resource "aws_iam_role_policy" "rds_proxy_policy" {
+  count = var.enable_rds_proxy ? 1 : 0
+  
+  name = "${local.name_prefix}-rds-proxy-policy"
+  role = aws_iam_role.rds_proxy[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = aws_secretsmanager_secret.db_credentials.arn
+      }
+    ]
+  })
+}
+
+# =============================================================================
+# RDS READ REPLICAS FOR SCALING READ WORKLOADS
+# =============================================================================
+
+# Read replica for scaling read-heavy workloads
+resource "aws_db_instance" "read_replica" {
+  count = var.enable_read_replica ? 1 : 0
+  
+  identifier = "${local.name_prefix}-postgresql-read-replica"
+  
+  # Read replica configuration
+  replicate_source_db = aws_db_instance.main.identifier
+  instance_class     = var.db_read_replica_instance_class
+  
+  # Network and security
+  publicly_accessible    = false
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  
+  # Monitoring
+  monitoring_interval = 60
+  monitoring_role_arn = aws_iam_role.rds_monitoring.arn
+  
+  # Performance Insights
+  performance_insights_enabled = true
+  
+  # Backup settings (inherited from source but can be overridden)
+  backup_retention_period = 7
+  
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-postgresql-read-replica"
+    Type = "ReadReplica"
+  })
+}
+
+# =============================================================================
+# RDS AURORA SERVERLESS V2 (ALTERNATIVE APPROACH)
+# =============================================================================
+
+# Aurora Serverless v2 provides automatic scaling for compute
+# Uncomment this section if you want to migrate to Aurora for better auto-scaling
+
+/*
+resource "aws_rds_cluster" "aurora_serverless" {
+  count = var.use_aurora_serverless ? 1 : 0
+  
+  cluster_identifier = "${local.name_prefix}-aurora-serverless"
+  engine             = "aurora-postgresql"
+  engine_mode        = "provisioned"
+  engine_version     = "15.4"
+  
+  database_name   = "threatcompass"
+  master_username = "threatcompass_admin"
+  master_password = random_password.db_password.result
+  
+  # Serverless v2 scaling configuration
+  serverlessv2_scaling_configuration {
+    max_capacity = var.aurora_max_capacity
+    min_capacity = var.aurora_min_capacity
+  }
+  
+  # Network configuration
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  
+  # Backup configuration
+  backup_retention_period = var.db_backup_retention_period
+  preferred_backup_window = var.db_backup_window
+  
+  # Storage encryption
+  storage_encrypted = true
+  
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-aurora-serverless"
+  })
+}
+
+resource "aws_rds_cluster_instance" "aurora_serverless_instance" {
+  count = var.use_aurora_serverless ? 2 : 0  # 2 instances for HA
+  
+  identifier         = "${local.name_prefix}-aurora-serverless-${count.index + 1}"
+  cluster_identifier = aws_rds_cluster.aurora_serverless[0].id
+  instance_class     = "db.serverless"
+  engine             = aws_rds_cluster.aurora_serverless[0].engine
+  engine_version     = aws_rds_cluster.aurora_serverless[0].engine_version
+  
+  monitoring_interval = 60
+  monitoring_role_arn = aws_iam_role.rds_monitoring.arn
+  
+  performance_insights_enabled = true
+  
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-aurora-serverless-instance-${count.index + 1}"
+  })
+}
+*/
+
+# =============================================================================
+# RDS PARAMETER GROUP FOR OPTIMIZATION
+# =============================================================================
+
+resource "aws_db_parameter_group" "main" {
+  family = "postgres15"
+  name   = "${local.name_prefix}-postgres-params"
+
+  # Connection and memory optimization for scaling
+  parameter {
+    name  = "max_connections"
+    value = var.db_max_connections
+  }
+  
+  parameter {
+    name  = "shared_preload_libraries"
+    value = "pg_stat_statements"
+  }
+  
+  parameter {
+    name  = "log_statement"
+    value = "mod"  # Log modifications for monitoring
+  }
+  
+  parameter {
+    name  = "log_min_duration_statement"
+    value = "1000"  # Log slow queries (>1 second)
+  }
+  
+  parameter {
+    name  = "effective_cache_size"
+    value = var.db_effective_cache_size
+  }
+  
+  parameter {
+    name  = "shared_buffers"
+    value = var.db_shared_buffers
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-postgres-params"
+  })
+}
+
+# =============================================================================
+# RDS CLOUDWATCH ALARMS FOR SCALING DECISIONS
+# =============================================================================
+
+# High CPU alarm to suggest vertical scaling
+resource "aws_cloudwatch_metric_alarm" "rds_cpu_high_for_scaling" {
+  alarm_name          = "${local.name_prefix}-rds-cpu-high-scaling"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "3"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = "85"
+  alarm_description   = "RDS CPU consistently high - consider vertical scaling"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.main.identifier
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-rds-cpu-scaling-alert"
+  })
+}
+
+# High connection count alarm
+resource "aws_cloudwatch_metric_alarm" "rds_connections_high" {
+  alarm_name          = "${local.name_prefix}-rds-connections-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "DatabaseConnections"
+  namespace           = "AWS/RDS"
+  period              = "300"
+  statistic           = "Average"
+  threshold           = var.db_max_connections * 0.8  # 80% of max connections
+  alarm_description   = "RDS connection count high - consider connection pooling or read replicas"
+  alarm_actions       = [aws_sns_topic.warning_alerts.arn]
+
+  dimensions = {
+    DBInstanceIdentifier = aws_db_instance.main.identifier
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-rds-connections-scaling-alert"
+  })
+}
+
+# =============================================================================
+# VARIABLES FOR RDS SCALING
+# =============================================================================
+
+variable "enable_rds_proxy" {
+  description = "Enable RDS Proxy for connection pooling"
+  type        = bool
+  default     = true
+}
+
+variable "enable_read_replica" {
+  description = "Enable read replica for read scaling"
+  type        = bool
+  default     = false
+}
+
+variable "db_read_replica_instance_class" {
+  description = "Instance class for read replica"
+  type        = string
+  default     = "db.t3.medium"
+}
+
+variable "use_aurora_serverless" {
+  description = "Use Aurora Serverless v2 instead of RDS PostgreSQL"
+  type        = bool
+  default     = false
+}
+
+variable "aurora_min_capacity" {
+  description = "Minimum Aurora Serverless capacity"
+  type        = number
+  default     = 0.5
+}
+
+variable "aurora_max_capacity" {
+  description = "Maximum Aurora Serverless capacity"
+  type        = number
+  default     = 4
+}
+
+variable "db_max_connections" {
+  description = "Maximum database connections"
+  type        = number
+  default     = 200
+}
+
+variable "db_iops" {
+  description = "IOPS for gp3 storage"
+  type        = number
+  default     = 3000
+}
+
+variable "db_storage_throughput" {
+  description = "Storage throughput for gp3 storage (MiB/s)"
+  type        = number
+  default     = 125
+}
+
+variable "db_effective_cache_size" {
+  description = "PostgreSQL effective_cache_size parameter"
+  type        = string
+  default     = "1GB"
+}
+
+variable "db_shared_buffers" {
+  description = "PostgreSQL shared_buffers parameter"
+  type        = string
+  default     = "256MB"
+}
+
+# =============================================================================
+# OUTPUTS
+# =============================================================================
+
+output "rds_proxy_endpoint" {
+  description = "RDS Proxy endpoint if enabled"
+  value       = var.enable_rds_proxy ? aws_db_proxy.main[0].endpoint : null
+}
+
+output "read_replica_endpoint" {
+  description = "Read replica endpoint if enabled"
+  value       = var.enable_read_replica ? aws_db_instance.read_replica[0].endpoint : null
+}
+
+output "rds_scaling_recommendations" {
+  description = "RDS scaling configuration summary"
+  value = {
+    storage_auto_scaling_enabled = true
+    max_storage_gb              = var.db_max_allocated_storage
+    proxy_enabled               = var.enable_rds_proxy
+    read_replica_enabled        = var.enable_read_replica
+    aurora_serverless_enabled   = var.use_aurora_serverless
+  }
+}
