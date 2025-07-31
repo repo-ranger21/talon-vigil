@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Features - TalonVigil{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12 text-center mb-5">
+            <h1 class="display-4 fw-bold">Platform Features</h1>
+            <p class="lead text-muted">Comprehensive cybersecurity capabilities designed for modern threats</p>
+        </div>
+    </div>
+
+    <!-- Core Features -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-brain fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">Federated Threat Intelligence</h5>
+                    <p class="card-text">Real-time aggregation from multiple threat intelligence sources with machine learning-powered correlation and federated learning capabilities.</p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="fas fa-check text-success"></i> MISP Integration</li>
+                        <li><i class="fas fa-check text-success"></i> OpenCTI Support</li>
+                        <li><i class="fas fa-check text-success"></i> Custom Feed Processing</li>
+                        <li><i class="fas fa-check text-success"></i> Federated Learning</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">Zero Trust Security</h5>
+                    <p class="card-text">Comprehensive zero trust architecture with continuous verification, adaptive policies, and device compliance monitoring.</p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="fas fa-check text-success"></i> Azure AD Integration</li>
+                        <li><i class="fas fa-check text-success"></i> Device Compliance</li>
+                        <li><i class="fas fa-check text-success"></i> Conditional Access</li>
+                        <li><i class="fas fa-check text-success"></i> Risk-based Authentication</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-robot fa-3x text-warning mb-3"></i>
+                    <h5 class="card-title">SOAR Automation</h5>
+                    <p class="card-text">Security Orchestration, Automation and Response with intelligent playbook execution and incident management.</p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="fas fa-check text-success"></i> Automated Playbooks</li>
+                        <li><i class="fas fa-check text-success"></i> Incident Response</li>
+                        <li><i class="fas fa-check text-success"></i> Custom Workflows</li>
+                        <li><i class="fas fa-check text-success"></i> Platform Integration</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">Adaptive Threat Scoring</h5>
+                    <p class="card-text">Machine learning-powered threat scoring that continuously adapts to your environment and improves accuracy over time.</p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="fas fa-check text-success"></i> ML-based Scoring</li>
+                        <li><i class="fas fa-check text-success"></i> Continuous Learning</li>
+                        <li><i class="fas fa-check text-success"></i> Feedback Loop</li>
+                        <li><i class="fas fa-check text-success"></i> Custom Models</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-vial fa-3x text-danger mb-3"></i>
+                    <h5 class="card-title">Chaos Engineering</h5>
+                    <p class="card-text">Controlled chaos experiments to test system resilience and identify potential security vulnerabilities before attackers do.</p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="fas fa-check text-success"></i> Safety Controls</li>
+                        <li><i class="fas fa-check text-success"></i> Experiment Framework</li>
+                        <li><i class="fas fa-check text-success"></i> Resilience Testing</li>
+                        <li><i class="fas fa-check text-success"></i> Automated Recovery</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-eye fa-3x text-secondary mb-3"></i>
+                    <h5 class="card-title">Full Observability</h5>
+                    <p class="card-text">Complete visibility into your security infrastructure with advanced analytics, real-time monitoring, and comprehensive reporting.</p>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="fas fa-check text-success"></i> Real-time Monitoring</li>
+                        <li><i class="fas fa-check text-success"></i> OpenTelemetry</li>
+                        <li><i class="fas fa-check text-success"></i> Custom Dashboards</li>
+                        <li><i class="fas fa-check text-success"></i> Alert Management</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Integration Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Platform Integrations</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-2 col-sm-4 col-6 mb-4">
+                            <i class="fab fa-microsoft fa-3x text-primary mb-2"></i>
+                            <p class="mb-0">Azure</p>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-4">
+                            <i class="fab fa-aws fa-3x text-warning mb-2"></i>
+                            <p class="mb-0">AWS</p>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-4">
+                            <i class="fas fa-database fa-3x text-info mb-2"></i>
+                            <p class="mb-0">MISP</p>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-4">
+                            <i class="fas fa-share-alt fa-3x text-success mb-2"></i>
+                            <p class="mb-0">OpenCTI</p>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-4">
+                            <i class="fas fa-chart-bar fa-3x text-danger mb-2"></i>
+                            <p class="mb-0">Elastic</p>
+                        </div>
+                        <div class="col-md-2 col-sm-4 col-6 mb-4">
+                            <i class="fas fa-cogs fa-3x text-secondary mb-2"></i>
+                            <p class="mb-0">APIs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="row">
+        <div class="col-12 text-center">
+            <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div class="card-body py-5">
+                    <h3 class="mb-3">Ready to Experience These Features?</h3>
+                    <p class="lead mb-4">Start your free trial and see how TalonVigil can enhance your security posture.</p>
+                    <a href="/login" class="btn btn-light btn-lg me-3">
+                        <i class="fas fa-rocket"></i> Start Free Trial
+                    </a>
+                    <a href="/contact" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-phone"></i> Schedule Demo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

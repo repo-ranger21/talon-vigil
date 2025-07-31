@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block title %}Security Dashboard - TalonVigil{% endblock %}
+
+{% block sidebar %}
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+    <div class="position-sticky pt-3">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="/dashboard">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/threat-intel">
+                    <i class="fas fa-brain"></i> Threat Intelligence
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/incidents">
+                    <i class="fas fa-exclamation-triangle"></i> Incidents
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/analytics">
+                    <i class="fas fa-chart-line"></i> Analytics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/compliance">
+                    <i class="fas fa-clipboard-check"></i> Compliance
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/settings">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </li>
+        </ul>
+        
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+            <span>Advanced Features</span>
+        </h6>
+        <ul class="nav flex-column mb-2">
+            <li class="nav-item">
+                <a class="nav-link" href="/zero-trust">
+                    <i class="fas fa-shield-alt"></i> Zero Trust
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/soar">
+                    <i class="fas fa-robot"></i> SOAR
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/chaos">
+                    <i class="fas fa-vial"></i> Chaos Engineering
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <!-- Dashboard Header -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Security Dashboard</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-outline-secondary">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+            <button type="button" class="btn btn-gradient">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2 status-card danger">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Critical Alerts
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ data.alerts.critical or 3 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2 status-card warning">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Active Incidents
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ data.incidents.active or 12 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-fire fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2 status-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Threat Indicators
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ data.threat_summary.total_indicators or 1247 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-brain fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2 status-card success">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                System Health
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">98.7%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-heartbeat fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Threat Trends Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Threat Activity Trends</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="threatTrendsChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Threat Distribution -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Threat Categories</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="threatDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and Federation Status -->
+    <div class="row">
+        <!-- Recent Alerts -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Security Alerts</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless" id="alertsTable">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Severity</th>
+                                    <th>Source</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{{ moment().subtract(5, 'minutes').format('HH:mm') }}</td>
+                                    <td><span class="badge bg-danger">Critical</span></td>
+                                    <td>Firewall</td>
+                                    <td>Multiple failed authentication attempts detected</td>
+                                    <td><span class="badge bg-warning">Investigating</span></td>
+                                </tr>
+                                <tr>
+                                    <td>{{ moment().subtract(12, 'minutes').format('HH:mm') }}</td>
+                                    <td><span class="badge bg-warning">Medium</span></td>
+                                    <td>Endpoint</td>
+                                    <td>Suspicious process execution on host-192.168.1.45</td>
+                                    <td><span class="badge bg-success">Resolved</span></td>
+                                </tr>
+                                <tr>
+                                    <td>{{ moment().subtract(25, 'minutes').format('HH:mm') }}</td>
+                                    <td><span class="badge bg-info">Low</span></td>
+                                    <td>Network</td>
+                                    <td>Unusual network traffic pattern observed</td>
+                                    <td><span class="badge bg-primary">Monitoring</span></td>
+                                </tr>
+                                <tr>
+                                    <td>{{ moment().subtract(35, 'minutes').format('HH:mm') }}</td>
+                                    <td><span class="badge bg-danger">High</span></td>
+                                    <td>Threat Intel</td>
+                                    <td>New malware hash detected in federated feed</td>
+                                    <td><span class="badge bg-success">Blocked</span></td>
+                                </tr>
+                                <tr>
+                                    <td>{{ moment().subtract(42, 'minutes').format('HH:mm') }}</td>
+                                    <td><span class="badge bg-warning">Medium</span></td>
+                                    <td>Email Security</td>
+                                    <td>Phishing email detected and quarantined</td>
+                                    <td><span class="badge bg-success">Resolved</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Federation Status -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Federation Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="form-text text-muted">Connected Nodes</small>
+                        <h4>{{ data.threat_summary.federated_nodes or 7 }}/10</h4>
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-success" style="width: 70%" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="form-text text-muted">Intelligence Sharing Rate</small>
+                        <h4>94.2%</h4>
+                        <div class="progress mb-3">
+                            <div class="progress-bar bg-info" style="width: 94%" aria-valuenow="94" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="form-text text-muted">Last Sync</small>
+                        <p class="mb-1">{{ data.threat_summary.last_update or "2 minutes ago" }}</p>
+                        <small class="text-muted">Next sync in 3 minutes</small>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-sync-alt"></i> Force Sync
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Performance -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">System Performance Metrics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h5>CPU Usage</h5>
+                                <div class="progress">
+                                    <div class="progress-bar bg-primary" style="width: 45%" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100">45%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h5>Memory Usage</h5>
+                                <div class="progress">
+                                    <div class="progress-bar bg-info" style="width: 67%" aria-valuenow="67" aria-valuemin="0" aria-valuemax="100">67%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h5>Network I/O</h5>
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" style="width: 23%" aria-valuenow="23" aria-valuemin="0" aria-valuemax="100">23%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="text-center">
+                                <h5>Storage</h5>
+                                <div class="progress">
+                                    <div class="progress-bar bg-warning" style="width: 78%" aria-valuenow="78" aria-valuemin="0" aria-valuemax="100">78%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Threat Trends Chart
+const ctx1 = document.getElementById('threatTrendsChart').getContext('2d');
+const threatTrendsChart = new Chart(ctx1, {
+    type: 'line',
+    data: {
+        labels: ['6h ago', '5h ago', '4h ago', '3h ago', '2h ago', '1h ago', 'Now'],
+        datasets: [{
+            label: 'Critical Threats',
+            data: [12, 19, 15, 25, 22, 18, 24],
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Medium Threats',
+            data: [35, 42, 38, 45, 39, 41, 43],
+            borderColor: '#f39c12',
+            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'Low Threats',
+            data: [45, 52, 48, 55, 49, 51, 53],
+            borderColor: '#27ae60',
+            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Threat Distribution Chart
+const ctx2 = document.getElementById('threatDistributionChart').getContext('2d');
+const threatDistributionChart = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+        labels: ['Malware', 'Phishing', 'Botnet', 'Ransomware', 'APT', 'Other'],
+        datasets: [{
+            data: [30, 25, 15, 12, 10, 8],
+            backgroundColor: [
+                '#e74c3c',
+                '#f39c12',
+                '#3498db',
+                '#9b59b6',
+                '#1abc9c',
+                '#95a5a6'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            }
+        }
+    }
+});
+
+// Auto-refresh functionality
+setInterval(function() {
+    // Simulate real-time updates
+    const timestamp = new Date().toLocaleTimeString();
+    console.log('Dashboard updated at:', timestamp);
+    
+    // Add animation to cards on refresh
+    document.querySelectorAll('.card').forEach(card => {
+        card.style.transform = 'scale(1.02)';
+        setTimeout(() => {
+            card.style.transform = 'scale(1)';
+        }, 200);
+    });
+}, 30000); // Refresh every 30 seconds
+
+// Add click handlers for interactive elements
+document.querySelectorAll('.btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        if (this.textContent.includes('Refresh')) {
+            e.preventDefault();
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            }, 2000);
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}TalonVigil - Cybersecurity Intelligence Platform{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section py-5 mb-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px; margin-top: 2rem;">
+    <div class="container text-center">
+        <div class="row align-items-center">
+            <div class="col-lg-8 mx-auto">
+                <h1 class="display-4 fw-bold mb-4">
+                    <i class="fas fa-shield-alt"></i> Welcome to TalonVigil
+                </h1>
+                <p class="lead mb-4">
+                    Advanced Cybersecurity Intelligence Platform providing real-time threat detection, 
+                    federated threat intelligence, and automated incident response.
+                </p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="/login" class="btn btn-light btn-lg px-4 me-md-2">
+                        <i class="fas fa-rocket"></i> Get Started
+                    </a>
+                    <a href="/features" class="btn btn-outline-light btn-lg px-4">
+                        <i class="fas fa-info-circle"></i> Learn More
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Key Features -->
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-4">
+            <h2 class="fw-bold">Platform Overview</h2>
+            <p class="text-muted">Comprehensive cybersecurity solutions for modern threats</p>
+        </div>
+    </div>
+    
+    <div class="row g-4 mb-5">
+        <!-- Threat Intelligence -->
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-brain fa-3x text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Federated Threat Intelligence</h5>
+                    <p class="card-text text-muted">
+                        Real-time threat intelligence aggregation from multiple sources with 
+                        federated learning capabilities.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Zero Trust -->
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-lock fa-3x text-success"></i>
+                    </div>
+                    <h5 class="card-title">Zero Trust Security</h5>
+                    <p class="card-text text-muted">
+                        Never trust, always verify. Comprehensive identity and device 
+                        verification with adaptive policies.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SOAR Integration -->
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-robot fa-3x text-warning"></i>
+                    </div>
+                    <h5 class="card-title">SOAR Automation</h5>
+                    <p class="card-text text-muted">
+                        Security Orchestration, Automation and Response with intelligent 
+                        playbook execution.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Features Row -->
+    <div class="row g-4 mb-5">
+        <!-- Adaptive Scoring -->
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-chart-line fa-3x text-info"></i>
+                    </div>
+                    <h5 class="card-title">Adaptive Threat Scoring</h5>
+                    <p class="card-text text-muted">
+                        Machine learning-powered threat scoring that adapts to your 
+                        environment and improves over time.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chaos Engineering -->
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-vial fa-3x text-danger"></i>
+                    </div>
+                    <h5 class="card-title">Chaos Engineering</h5>
+                    <p class="card-text text-muted">
+                        Controlled chaos experiments to test and improve system 
+                        resilience and security posture.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Observability -->
+        <div class="col-md-4">
+            <div class="card h-100 text-center">
+                <div class="card-body p-4">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-eye fa-3x text-secondary"></i>
+                    </div>
+                    <h5 class="card-title">Full Observability</h5>
+                    <p class="card-text text-muted">
+                        Complete visibility into your security infrastructure with 
+                        advanced analytics and reporting.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Section -->
+<div class="bg-light py-5 mb-5" style="border-radius: 15px;">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 mb-3">
+                <div class="metric-card">
+                    <div class="metric-number text-primary">24/7</div>
+                    <div class="metric-label">Monitoring</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="metric-card">
+                    <div class="metric-number text-success">99.9%</div>
+                    <div class="metric-label">Uptime</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="metric-card">
+                    <div class="metric-number text-warning">< 1min</div>
+                    <div class="metric-label">Response Time</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="metric-card">
+                    <div class="metric-number text-info">1000+</div>
+                    <div class="metric-label">Threat Sources</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Call to Action -->
+<div class="container text-center mb-5">
+    <div class="card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+        <div class="card-body py-5">
+            <h3 class="mb-3">Ready to Secure Your Organization?</h3>
+            <p class="lead mb-4">
+                Join thousands of organizations using TalonVigil to protect their digital assets.
+            </p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                <a href="/login" class="btn btn-light btn-lg px-4 me-md-2">
+                    <i class="fas fa-shield-alt"></i> Start Free Trial
+                </a>
+                <a href="/contact" class="btn btn-outline-light btn-lg px-4">
+                    <i class="fas fa-phone"></i> Contact Sales
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Status -->
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-heartbeat"></i> System Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-circle text-success me-2"></i>
+                                <strong>TalonVigil Development Server</strong>
+                                <span class="badge bg-success ms-auto">Operational</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-circle text-success me-2"></i>
+                                <strong>Threat Intelligence Feeds</strong>
+                                <span class="badge bg-success ms-auto">Active</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-circle text-warning me-2"></i>
+                                <strong>Machine Learning Models</strong>
+                                <span class="badge bg-warning ms-auto">Training</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-circle text-success me-2"></i>
+                                <strong>API Services</strong>
+                                <span class="badge bg-success ms-auto">Healthy</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-circle text-success me-2"></i>
+                                <strong>Security Monitoring</strong>
+                                <span class="badge bg-success ms-auto">Active</span>
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-clock text-muted me-2"></i>
+                                <strong>Last Updated:</strong>
+                                <span class="text-muted ms-auto" id="current-time"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update current time
+function updateTime() {
+    const now = new Date();
+    const timeString = now.toLocaleString();
+    const timeElement = document.getElementById('current-time');
+    if (timeElement) {
+        timeElement.textContent = timeString;
+    }
+}
+
+// Update time immediately and then every second
+updateTime();
+setInterval(updateTime, 1000);
+
+// Add smooth scrolling to all links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute('href')).scrollIntoView({
+            behavior: 'smooth'
+        });
+    });
+});
+</script>
+{% endblock %}
