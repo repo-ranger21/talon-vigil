@@ -1,68 +1,67 @@
 # TalonVigil
 
-A cloud-native, AI-powered cybersecurity threat intelligence platform with Zero Trust Architecture and advanced threat hunting capabilities.
+A comprehensive cybersecurity threat intelligence and monitoring platform built with Flask.
 
 ## Overview
 
-TalonVigil is an enterprise-grade, cloud-native cybersecurity platform that leverages AI/ML for threat intelligence, automated incident response, and proactive security operations. Built with Zero Trust principles, the platform provides federated threat intelligence, adaptive scoring, SOAR integration, and comprehensive compliance automation across multi-cloud environments.
+TalonVigil is a modern, multi-tenant cybersecurity platform that provides threat intelligence, monitoring, and incident response capabilities. The platform features a robust authentication system, role-based access control, automated threat detection, and comprehensive reporting tools.
 
 ## Features
 
-### �️ Zero Trust Architecture
-- Azure AD integration with conditional access policies
-- Identity-based access controls with MFA enforcement
-- Kubernetes network policies for microservice segmentation
-- Managed identities for secure service-to-service communication
-- Continuous verification and least-privilege access
+### 🔐 Authentication & Authorization
+- Multi-tenant architecture with secure tenant isolation
+- Role-based access control (RBAC)
+- User registration and invitation system
+- Password reset functionality
+- Session management with Flask-Login
 
-### � Advanced Security & Authentication
-- Flask-Security with JWT-Extended for robust authentication
-- Azure Key Vault integration for secrets management
-- Automatic secret rotation with audit logging
-- RBAC with dynamic permission evaluation
-- CSRF protection and secure session management
+### 🛡️ Security Features
+- Rate limiting with Flask-Limiter
+- Secure password hashing
+- Token-based authentication
+- CORS protection
+- Input validation and sanitization
 
-### 🤖 AI-Powered Threat Intelligence
-- Federated learning across distributed threat data
-- Adaptive threat scoring with ensemble ML models
-- Real-time behavioral anomaly detection
-- MITRE ATT&CK framework integration
-- Automated threat hunting and correlation
+### 📊 Threat Intelligence
+- Automated threat data collection and enrichment
+- Web scraping capabilities for threat intelligence gathering
+- Real-time threat monitoring
+- Threat analysis and reporting
 
-### 🚀 DevSecOps Integration
-- SonarQube static code analysis
-- OWASP ZAP dynamic security testing
-- Automated dependency scanning (pip-audit, npm audit)
-- Security unit tests for APIs and components
-- Policy-as-code with Azure Policy
+### 🔄 Background Processing
+- Celery-based task queue for asynchronous processing
+- Redis backend for task management
+- Scheduled tasks with Celery Beat
+- Email notifications and alerts
 
-### 🔄 SOAR & Automation
-- Cortex XSOAR and Splunk Phantom connectors
-- Automated incident response playbooks
-- Phishing and malware containment workflows
-- Rollback and recovery automation
-- Purple team exercise orchestration
+### 📧 Communication
+- Flask-Mail integration for email notifications
+- Welcome emails for new users
+- Password reset emails
+- System alerts and notifications
 
-### 📊 Advanced Observability
-- OpenTelemetry for unified telemetry
-- Grafana and Azure Monitor visualizations
-- ML-based anomaly detection on metrics
-- Chaos engineering with Azure Chaos Studio
-- Threat flow visualization
+### 🏢 Multi-Tenant Support
+- Complete tenant isolation
+- Per-tenant configuration
+- Tenant-specific data and users
+- Scalable architecture
 
-### 📋 Compliance & Governance
-- Automated NIST, ISO 27001, SOC 2 mapping
-- Azure Compliance Manager integration
-- Continuous compliance monitoring
-- Automated audit report generation
-- Policy enforcement and remediation
-
-### 🎯 Threat Simulation & Testing
-- MITRE ATT&CK simulation with Caldera
-- Atomic Red Team integration
-- Scheduled purple team exercises
-- Detection logic refinement
-- Security control validation
+### 🎨 AI-Driven UI/UX Design System
+- **Hyper-Personalized Interface**: AI-driven actionable playbooks with automated remediation
+- **Clear Complexity Management**: Presents vast security data in digestible, actionable formats
+- **Proactive & Actionable Design**: Highlights critical alerts with rapid response capabilities
+- **Intuitive Efficiency**: Streamlined workflows reducing cognitive load for security analysts
+- **Trust-Building Elements**: Confidence indicators, compliance badges, and verification systems
+- **Adaptive Intelligence**: Personalized experiences based on user patterns and AI recommendations
+- **Inter Font Typography**: Optimized for data-heavy security interfaces with enhanced readability
+- **TalonVigil Color Palette**: Deep blue-black backgrounds with vibrant cyan, purple, and orange accents
+- **Accessibility Features**: High contrast mode, keyboard navigation, and screen reader support
+- **Dual Monitoring Support**: Integrated Azure Monitor and Datadog visualization components
+- **Actionable Design**: Proactive threat alerts with one-click remediation
+- **Dark Theme**: Professional cybersecurity aesthetic with high contrast
+- **Trust-Building Elements**: Security badges and verification indicators
+- **Complexity Management**: Simple/Advanced view toggles for different user types
+- **Responsive Design**: Mobile-first approach for field security operations
 
 ## Technology Stack
 

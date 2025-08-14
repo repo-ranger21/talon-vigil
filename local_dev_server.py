@@ -181,35 +181,13 @@ def register():
 @app.route('/dashboard')
 def dashboard():
     """Dashboard page"""
-    dashboard_data = {
+    return render_template('dashboard.html') if os.path.exists('templates/dashboard.html') else jsonify({
+        'page': 'dashboard',
         'user': 'Demo User',
-        'timestamp': datetime.now().isoformat(),
-        'threat_summary': {
-            'total_indicators': 1247,
-            'last_update': '2 minutes ago',
-            'federated_nodes': 7
-        },
-        'alerts': {
-            'critical': 3,
-            'high': 8,
-            'medium': 15,
-            'low': 23
-        },
-        'incidents': {
-            'active': 12,
-            'resolved_today': 8
-        },
-        'recent_alerts': [
-            {
-                'time': '14:35',
-                'severity': 'Critical',
-                'source': 'Firewall',
-                'description': 'Multiple failed authentication attempts detected',
-                'status': 'Investigating'
-            }
-        ]
-    }
-    return render_template('dashboard.html', data=dashboard_data) if os.path.exists('templates/dashboard.html') else jsonify(dashboard_data)
+        'alerts': 12,
+        'threats_detected': 45,
+        'status': 'Protected'
+    })
 
 # ==============================================================================
 # API ENDPOINTS

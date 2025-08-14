@@ -1,0 +1,31 @@
+{
+  "name": "egi-threat-detection-engine",
+  "version": "1.0.0",
+  "description": "Multi-channel threat analysis for Email, SMS, and Calls",
+  "main": "dist/threat_detection_engine.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/threat_detection_engine.js",
+    "test": "npm run build && node --test",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "threat-detection",
+    "security",
+    "email-security",
+    "sms-security", 
+    "call-security",
+    "phishing-detection",
+    "malware-detection"
+  ],
+  "author": "EGI Security Team",
+  "license": "MIT"
+}
