@@ -1,44 +1,21 @@
-# 🚀 TalonVigil Render Deployment Guide
+# Render Deployment Guide
 
-This guide walks contributors through deploying TalonVigil’s backend on [Render](https://render.com), with civic-grade reproducibility and least-privilege security.
+## Civic Framing
+This guide helps contributors deploy and verify the app on Render, ensuring transparency and parity for civic tech projects.
 
----
+## Setup Steps
+1. **Fork and Clone the Repo**
+2. **Create a Render Web Service**
+   - Connect to GitHub, select your repo.
+   - Use `render.yaml` for config.
+3. **Enable Auto-Deploy**
+   - Go to service > Settings > Auto-Deploy (enable for main branch).
+4. **Set Environment Variables**
+   - Use `.env.template` for reference, add secrets via Render dashboard.
+5. **Verify Health Check**
+   - Visit `/health` endpoint; should return `{"status": "ok"}` with HTTP 200.
+6. **Troubleshooting Parity**
+   - Compare local vs Render logs for config mismatches.
 
-## 🧱 Prerequisites
-
-- GitHub access to `talonvigil-backend`
-- Python 3.11+ installed locally
-- Render account with verified email
-
----
-
-## 🛠️ Setup Steps
-
-1. **Fork the repo**  
-   → `https://github.com/talonvigil/talonvigil-backend`
-
-2. **Create a new Web Service on Render**  
-   → Select “Web Service” → Connect GitHub → Choose your fork
-
-3. **Configure Environment**
-   - Runtime: Python 3.11
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `gunicorn app:app`
-   - Environment Variables:
-     - `FLASK_ENV=production`
-     - `API_KEY=<your-least-privilege-key>`
-     - `CIVIC_DISCLAIMER=true`
-
-4. **Set Custom Domain**  
-   → `api.talonvigil.com` (via Cloudflare CNAME)
-
-5. **Enable Auto Deploy**  
-   → Trigger builds on every push to `main`
-
----
-
-## 🧪 Test Your Deployment
-
-```bash
-curl https://api.talonvigil.com/ping
-# Expected: {"status": "alive", "civic": true}
+## Useful Links
+- [Render Docs](https://render.com/docs)
