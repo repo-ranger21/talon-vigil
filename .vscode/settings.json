@@ -1,0 +1,8 @@
+{
+  "python.pythonPath": "venv/bin/python",
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  }
+}
