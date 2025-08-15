@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: talonvigil-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    preInstall:
+      apt-get update && apt-get install -y libxml2-dev libxslt1-dev zlib1g-dev
