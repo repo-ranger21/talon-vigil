@@ -1,0 +1,44 @@
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-24_05"
+
+[workflows]
+runButton = "main"
+
+[[workflows.workflow]]
+name = "main"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python local_dev_server.py"
+
+[deployment]
+run = ["sh", "-c", "python local_dev_server.py"]
+
+[env]
+PYTHONPATH = "${PYTHONPATH}:${REPL_SLUG}"
+
+[interpreter]
+[interpreter.command]
+args = ["python", "local_dev_server.py"]
+
+[languages]
+[languages.python3]
+pattern = "**/*.py"
+
+[languages.python3.languageServer]
+start = "pylsp"
+
+[gitHubImport]
+requiredFiles = [".replit", "replit.nix"]
+
+[packager]
+language = "python3"
+ignoredPaths = ["venv"]
+
+[packager.features]
+enabledForHosting = false
+packageSearch = true
+guessImports = true

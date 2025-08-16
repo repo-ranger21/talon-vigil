@@ -9,7 +9,8 @@ This guide helps ensure your VS Code workspace is **exactly synchronized** with 
 Compare the contents of these files and folders between your VS Code workspace and GitHub repo:
 
 - `requirements.txt`
-- `render.yaml`
+- `.replit`
+- `replit.nix`
 - `vercel.json`
 - `.env.example`
 - `.gitignore`
