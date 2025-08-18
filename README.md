@@ -1,30 +1,69 @@
-[![Render Status](https://render.com/api/v1/services/srv-d2f2vmur433s73epki50/status)](https://dashboard.render.com/web/srv-d2f2vmur433s73epki50)
+# 🛡️ TalonVigil Desktop
 
-# Talon Vigil
-
-Welcome! This repository contains civic tech deployment resources, health check endpoints, and environment management files for transparent and reproducible app operations.
-
-## Key Files
-
-- `health-check.md` – Endpoint verification guide for Flask/FastAPI.
-- `render-deploy.md` – Step-by-step Render deployment instructions.
-- `.env.template` – Example environment variables.
-- `.env.local` – Local environment overrides (excluded from version control).
-- `.gitignore` – Ignores `.env.local` for safety.
-
-## Deployment Status
-
-The badge above shows the current Render deployment status for this project.
-
-## Quick Start
-
-1. Clone the repo and copy `.env.template` to `.env.local`, then set your own secrets.
-2. Deploy to Render using the instructions in `render-deploy.md`.
-3. Verify `/health` endpoint for parity.
-
-## Contributing
-
-We welcome civic-minded contributions! Please follow the guides and open issues for questions or suggestions.
+Civic-grade threat modeling meets ethical satire. This downloadable app empowers contributors to audit, simulate, and reflect on sports volatility with dignity and reproducibility.
 
 ---
-For more details, see the full guides in this repo.
+
+## 🚀 Features
+
+- **Modular onboarding wizard** (role-aware, civic-guided)
+- **Supabase-backed audit logging** and contributor sync
+- **Explainability overlays** for ethical modeling
+- **Role-based dashboards** (Admin, Analyst, Guest)
+- **Cross-platform builds** (.exe, .dmg, .AppImage)
+
+---
+
+## 🧰 Setup
+
+```bash
+git clone https://github.com/repo-ranger21/talon-vigil.git
+cd talon-vigil
+npm install
+npm run build
+npm run electron
+```
+
+---
+
+## 🧙 Onboarding Flow
+
+1. **Select your role** (Admin, Analyst, Guest)
+2. **Authenticate via Supabase** (email/password or magic link)
+3. **Tour civic-grade overlays and ethical disclaimers**
+4. **Configure local sync and logging preferences**
+
+---
+
+## 🧪 Contributor Guide
+
+- All modules are **documented and reproducible**
+- Validator scripts **enforce onboarding clarity**
+- Satirical overlays are **opt-in and context-aware**
+- **CI/CD pipelines auto-package** builds for testing
+
+---
+
+## 🧼 Civic Disclaimers
+
+This app is a public-good experiment in ethical tech. All volatility models are satirical simulations. **No real-world decisions should be made based on this data.** Contributors are encouraged to reflect, not exploit.
+
+---
+
+## 🛠️ Build Targets
+
+| Platform | Output    |
+|----------|-----------|
+| Windows  | `.exe`    |
+| macOS    | `.dmg`    |
+| Linux    | `.AppImage` |
+
+---
+
+## 🤝 License & Ethics
+
+MIT License **with civic-grade ethics addendum.** All contributors must agree to uphold dignity, transparency, and reproducibility.
+
+---
+
+**Prioritize onboarding clarity, civic disclaimers, and reproducible setup. Welcome to TalonVigil!**
