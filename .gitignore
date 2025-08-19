@@ -1,1 +1,8 @@
 .env.local
+
+# Deployment files to prevent accidental redeployments
+.vercel/
+render.yaml
+render.yml
+vercel.json
+vercel.config.js
