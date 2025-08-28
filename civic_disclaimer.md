@@ -14,7 +14,7 @@ This guide helps contributors configure DNS routing and SSL protection for Talon
 
 - Access to `talonvigil.com` zone in Cloudflare
 - Least-privilege API token with DNS:Edit scope
-- Render and Vercel deployments live
+- Backend deployment live on hosting platform
 
 ---
 
@@ -31,7 +31,7 @@ This guide helps contributors configure DNS routing and SSL protection for Talon
    | Type | Name | Value | Proxy |
    |------|------|-------|-------|
    | CNAME | `api` | `render-backend-url` | Proxied |
-   | CNAME | `www` | `vercel-frontend-url` | Proxied |
+   | CNAME | `www` | `frontend-deployment-url` | Proxied |
 
 3. **Enable SSL**
    - SSL/TLS → Full (Strict)

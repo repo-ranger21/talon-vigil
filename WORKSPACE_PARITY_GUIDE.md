@@ -10,7 +10,6 @@ Compare the contents of these files and folders between your VS Code workspace a
 
 - `requirements.txt`
 - `render.yaml`
-- `vercel.json`
 - `.env.example`
 - `.gitignore`
 - `package.json`

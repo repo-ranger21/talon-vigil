@@ -7,7 +7,6 @@ This file lists all tracked files and folders in the repository as of 2025-08-15
 - FILE_MANIFEST.md
 - requirements.txt
 - render.yaml
-- vercel.json
 - .env.example
 - .gitignore
 - package.json

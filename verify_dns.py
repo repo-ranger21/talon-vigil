@@ -7,8 +7,8 @@ Verifies that Cloudflare DNS records for TalonVigil are correctly routed and pro
 import requests
 
 RECORDS = {
-    "api.talonvigil.com": "render-backend-url",
-    "www.talonvigil.com": "vercel-frontend-url"
+    "api.talonvigil.com": "backend-service-url",
+    "www.talonvigil.com": "frontend-service-url"
 }
 
 def verify_dns():

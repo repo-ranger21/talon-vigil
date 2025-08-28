@@ -8,7 +8,7 @@ This document outlines the architectural, operational, and civic-grade optimizat
 
 | Layer | Platform | Purpose |
 |-------|----------|---------|
-| **Frontend** | Vercel | UI, onboarding flows, civic overlays |
+| **Frontend** | Static Hosting | UI, onboarding flows, civic overlays |
 | **Backend** | Render | Flask API, audit pipelines, contributor logic |
 | **DNS & SSL** | Cloudflare | Subdomain routing, HTTPS, threat shielding |
 | **Version Control** | GitHub | Modular repo structure, contributor PRs |
@@ -30,7 +30,7 @@ This document outlines the architectural, operational, and civic-grade optimizat
 
 - ✅ Cloudflare SSL: Full (Strict) mode with proxied DNS records
 - ✅ HTTPS enforced via Cloudflare rewrites
-- ✅ Environment variables stored securely in Render and Vercel
+- ✅ Environment variables stored securely in hosting platforms
 - ✅ GitHub repo structured for auditability and onboarding transparency
 
 ---
@@ -39,7 +39,7 @@ This document outlines the architectural, operational, and civic-grade optimizat
 
 1. **Push to GitHub**
 2. **Render auto-builds backend**
-3. **Vercel auto-builds frontend**
+3. **Frontend deployment platform auto-builds frontend**
 4. **Cloudflare routes traffic via CNAME records**
 5. **SSL issued automatically**
 6. **DNS verified via `verify_dns.py` (optional)**
