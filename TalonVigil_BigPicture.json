@@ -1,0 +1,100 @@
+{
+  "object": "page",
+  "title": [{ "type": "text", "text": { "content": "🛡️ TalonVigil — Big Picture Hub" } }],
+  "children": [
+    {
+      "object": "block",
+      "type": "paragraph",
+      "paragraph": { "text": [{ "type": "text", "text": { "content": "Security You Can Explain. Access You Can Defend." } }] }
+    },
+    {
+      "object": "block",
+      "type": "heading_2",
+      "heading_2": { "text": [{ "type": "text", "text": { "content": "📜 Overview" } }] }
+    },
+    {
+      "object": "block",
+      "type": "paragraph",
+      "paragraph": {
+        "text": [
+          { "type": "text", "text": { "content": "TalonVigil is a modular, AI‑powered cybersecurity platform for public‑good technology, civic resilience, and transparent threat defense. This hub page gives you the 'big picture' — the mission, the values, the products, and the contributor pathways." } }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "heading_2",
+      "heading_2": { "text": [{ "type": "text", "text": { "content": "🧩 Core Values & Differentiators" } }] }
+    },
+    {
+      "object": "block",
+      "type": "table",
+      "table": {
+        "table_width": 3,
+        "has_column_header": true,
+        "children": [
+          {
+            "type": "table_row",
+            "table_row": {
+              "cells": [
+                [{ "type": "text", "text": { "content": "Value" } }],
+                [{ "type": "text", "text": { "content": "What It Means" } }],
+                [{ "type": "text", "text": { "content": "Civic Impact" } }]
+              ]
+            }
+          },
+          {
+            "type": "table_row",
+            "table_row": {
+              "cells": [
+                [{ "type": "text", "text": { "content": "Security First" } }],
+                [{ "type": "text", "text": { "content": "Zero‑trust, encryption, secure defaults" } }],
+                [{ "type": "text", "text": { "content": "Protects sensitive data across sectors" } }]
+              ]
+            }
+          },
+          {
+            "type": "table_row",
+            "table_row": {
+              "cells": [
+                [{ "type": "text", "text": { "content": "Reproducibility" } }],
+                [{ "type": "text", "text": { "content": "Transparent logs & playbooks" } }],
+                [{ "type": "text", "text": { "content": "Enables audit, validation, and trust" } }]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "object": "block",
+      "type": "heading_2",
+      "heading_2": { "text": [{ "type": "text", "text": { "content": "📦 Product Modules" } }] }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": { "text": [{ "type": "text", "text": { "content": "Threat Detection Engine" } }] }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": { "text": [{ "type": "text", "text": { "content": "Email Gateway Integration" } }] }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": { "text": [{ "type": "text", "text": { "content": "Audit Logging Suite" } }] }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": { "text": [{ "type": "text", "text": { "content": "Civic Reporting Dashboard" } }] }
+    },
+    {
+      "object": "block",
+      "type": "bulleted_list_item",
+      "bulleted_list_item": { "text": [{ "type": "text", "text": { "content": "Custom Rules Engine (Enterprise preview)" } }] }
+    }
+  ]
+}
