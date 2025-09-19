@@ -1,0 +1,132 @@
+# Heuristic Rules for Email Threat Detection
+# Format: rule_id: { category, pattern, weight, description }
+
+header:
+  HDR-001:
+    category: "header"
+    pattern: "spf_fail"
+    weight: 0.3
+    description: "SPF authentication failure detected"
+  
+  HDR-002:
+    category: "header"
+    pattern: "dkim_fail"
+    weight: 0.25
+    description: "DKIM signature verification failure"
+  
+  HDR-003:
+    category: "header"
+    pattern: "dmarc_fail"
+    weight: 0.35
+    description: "DMARC policy failure detected"
+  
+  HDR-004:
+    category: "header"
+    pattern: "suspicious_sender"
+    weight: 0.4
+    description: "Sender domain reputation issues"
+  
+  HDR-005:
+    category: "header"
+    pattern: "forged_headers"
+    weight: 0.5
+    description: "Potentially forged email headers"
+
+body:
+  BOD-001:
+    category: "body"
+    pattern: "urgent.*action.*required"
+    weight: 0.3
+    description: "Urgency-related social engineering language"
+  
+  BOD-002:
+    category: "body"
+    pattern: "click.*here.*immediately"
+    weight: 0.35
+    description: "Suspicious call-to-action language"
+  
+  BOD-003:
+    category: "body"
+    pattern: "wire.*transfer|bank.*details"
+    weight: 0.6
+    description: "Financial fraud keywords detected"
+  
+  BOD-004:
+    category: "body"
+    pattern: "verify.*account.*suspended"
+    weight: 0.4
+    description: "Account verification scam language"
+  
+  BOD-005:
+    category: "body"
+    pattern: "congratulations.*you.*won"
+    weight: 0.5
+    description: "Prize/lottery scam indicators"
+  
+  BOD-006:
+    category: "body"
+    pattern: "confidential.*urgent.*ceo"
+    weight: 0.45
+    description: "Business email compromise language"
+
+attachment:
+  ATT-001:
+    category: "attachment"
+    pattern: "\\.(exe|scr|pif|com|bat|cmd)$"
+    weight: 0.8
+    description: "Executable file attachment detected"
+  
+  ATT-002:
+    category: "attachment"
+    pattern: "\\.(zip|rar|7z)$"
+    weight: 0.3
+    description: "Compressed archive attachment"
+  
+  ATT-003:
+    category: "attachment"
+    pattern: "\\.(doc|docx|xls|xlsx|ppt|pptx)$"
+    weight: 0.2
+    description: "Office document attachment"
+  
+  ATT-004:
+    category: "attachment"
+    pattern: "\\.(js|vbs|wsf|jar)$"
+    weight: 0.7
+    description: "Script file attachment detected"
+  
+  ATT-005:
+    category: "attachment"
+    pattern: "invoice.*\\.(pdf|doc|docx)$"
+    weight: 0.4
+    description: "Suspicious invoice-themed attachment"
+
+url:
+  URL-001:
+    category: "url"
+    pattern: "bit\\.ly|tinyurl|goo\\.gl|t\\.co"
+    weight: 0.3
+    description: "URL shortener service detected"
+  
+  URL-002:
+    category: "url"
+    pattern: "phishing.*|malware.*|suspicious.*domain"
+    weight: 0.8
+    description: "Known malicious domain pattern"
+  
+  URL-003:
+    category: "url"
+    pattern: "http://.*(?!https)"
+    weight: 0.2
+    description: "Unencrypted HTTP link detected"
+  
+  URL-004:
+    category: "url"
+    pattern: "[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}"
+    weight: 0.4
+    description: "Direct IP address link detected"
+  
+  URL-005:
+    category: "url"
+    pattern: "login.*bank|paypal.*verify|amazon.*security"
+    weight: 0.6
+    description: "Financial/account phishing URL patterns"
