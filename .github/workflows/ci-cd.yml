@@ -19,5 +19,5 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install || true
+        run: npm install
 
