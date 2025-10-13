@@ -21,5 +21,3 @@ jobs:
       - name: Install dependencies
         run: npm install || true
 
-      - name: Run build (placeholder)
-        run: echo "Build successful"
