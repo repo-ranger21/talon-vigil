@@ -1,6 +1,6 @@
 # Talon Vigil
 
-![Build Status](https://img.shields.io/travis/username/repo.svg?style=flat-square)
+![Build Status](https://img.shields.io/travis/talon-vigil/talon-vigil.svg?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)
 
 ## Table of Contents
