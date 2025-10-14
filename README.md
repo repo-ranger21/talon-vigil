@@ -20,16 +20,16 @@ TalonVigil is a modular framework that deploys Azure Sentinel and Log Analytics 
  ✨ Features
 
  🏢 Enterprise Ready
-- Automated Deployment**: Provision Sentinel + LAW with Infrastructure as Code (Bicep/ARM)
-- Audit-Ready Defaults**: Diagnostic settings, tagging, and policy wiring built-in
-- Compliance Mapping**: Governance dashboards aligned with SOC2/NIST frameworks
-- Branded Dashboards**: Clear, trust-building visuals for stakeholders and auditors
+- Automated Deployment: Provision Sentinel + LAW with Infrastructure as Code (Bicep/ARM)
+- Audit-Ready Defaults: Diagnostic settings, tagging, and policy wiring built-in
+- Compliance Mapping: Governance dashboards aligned with SOC2/NIST frameworks
+- Branded Dashboards: Clear, trust-building visuals for stakeholders and auditors
 
  🔧 Modular & Extensible
-- Reusable Templates**: Modular packs for analytic rules, workbooks, and playbooks
-- Personal EGI Mode**: Lightweight "Email Guarding Intelligence" for individuals/families
-- Custom Analytics**: Easy-to-deploy detection rules and hunting queries
-- Multi-Tenant Support**: Scalable architecture for MSPs and large organizations
+- Reusable Templates: Modular packs for analytic rules, workbooks, and playbooks
+- Personal EGI Mode: Lightweight "Email Guarding Intelligence" for individuals/families
+- Custom Analytics: Easy-to-deploy detection rules and hunting queries
+- Multi-Tenant Support: Scalable architecture for MSPs and large organizations
 
  🚀 Quick Start
 
@@ -426,7 +426,7 @@ az deployment sub create \
   --parameters dailyQuotaGb=50
 ```
 
-### Multi-Environment Setup
+ Multi-Environment Setup
 
 ```bash
  Development environment
@@ -444,12 +444,12 @@ az deployment sub create \
 
  📚 Documentation
 
-- [Deployment Guide](docs/deployment.md)** - Step-by-step setup instructions
-- [Configuration Reference](docs/configuration.md)** - Detailed configuration options
-- [Analytics Rules](docs/analytics.md)** - Guide to detection rules and queries
-- [Playbooks](docs/playbooks.md)** - Automated response workflows
-- [Compliance Mapping](docs/compliance.md)** - SOC2, NIST, and other frameworks
-- [API Reference](docs/api.md)** - Integration and automation APIs
+- [Deployment Guide](docs/deployment.md) - Step-by-step setup instructions
+- [Configuration Reference](docs/configuration.md) - Detailed configuration options
+- [Analytics Rules](docs/analytics.md) - Guide to detection rules and queries
+- [Playbooks](docs/playbooks.md) - Automated response workflows
+- [Compliance Mapping](docs/compliance.md) - SOC2, NIST, and other frameworks
+- [API Reference](docs/api.md) - Integration and automation APIs
 
  🤝 Contributing
 
@@ -457,10 +457,10 @@ We welcome contributions from the community! Please read our [Contributing Guide
 
 🎯 High-Impact Areas
 
-- 📝 Analytics Rules**: New detection templates for emerging threats
-- 📊 Compliance Mappings**: SOC2, HIPAA, ISO 27001 framework alignments  
-- 🎨 Dashboard UX**: Improvements to workbooks and visual reporting
-- 📚 Documentation**: Tutorials, guides, and best practices
+- 📝 Analytics Rules: New detection templates for emerging threats
+- 📊 Compliance Mappings: SOC2, HIPAA, ISO 27001 framework alignments  
+- 🎨 Dashboard UX: Improvements to workbooks and visual reporting
+- 📚 Documentation: Tutorials, guides, and best practices
 
  Quick Contributing Steps
 
